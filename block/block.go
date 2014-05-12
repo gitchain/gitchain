@@ -79,7 +79,10 @@ loop:
 		i.SetBytes(buf1.Bytes())
 		if i.Cmp(target) == -1 {
 			b.Nonce = n
-			break loop
+			return
 		}
 	}
+	// Update timestamp and restart the process
+	b.Timestamp = time.Now().UTC().Unix()
+	goto loop
 }
