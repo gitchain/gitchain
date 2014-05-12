@@ -3,28 +3,28 @@ package main
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"gitchain/transaction"
+	trans "gitchain/transaction"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestNewReservation(t *testing.T) {
 	privateKey := generateKey(t)
-	txn, rand := transaction_.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn1, rand1 := transaction_.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn1, rand1 := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
 	assert.NotEqual(t, txn.Hash, txn1.Hash, "hashes should not be equal")
 	assert.NotEqual(t, rand, rand1, "random numbers should not be equal")
 }
 
 func TestReservationEncodingDecoding(t *testing.T) {
 	privateKey := generateKey(t)
-	txn, _ := transaction_.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn, _ := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
 	e, err := txn.Encode()
 	if err != nil {
 		t.Errorf("error while encoding transaction: %v", err)
 	}
 
-	decoded, err1 := transaction_.Decode(e)
+	decoded, err1 := trans.Decode(e)
 	if err1 != nil {
 		t.Errorf("error while encoding transaction: %v", err1)
 	}
@@ -34,8 +34,8 @@ func TestReservationEncodingDecoding(t *testing.T) {
 
 func TestNewAllocation(t *testing.T) {
 	privateKey := generateKey(t)
-	_, rand := transaction_.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn2, err := transaction_.NewNameAllocation("my-new-repository", rand, privateKey)
+	_, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn2, err := trans.NewNameAllocation("my-new-repository", rand, privateKey)
 
 	if err != nil {
 		t.Errorf("error while creating name allocation transaction: %v", err)
@@ -50,15 +50,15 @@ func TestNewAllocation(t *testing.T) {
 
 func TestAllocationEncodingDecoding(t *testing.T) {
 	privateKey := generateKey(t)
-	_, rand := transaction_.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn, err := transaction_.NewNameAllocation("my-new-repository", rand, privateKey)
+	_, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn, err := trans.NewNameAllocation("my-new-repository", rand, privateKey)
 
 	e, err := txn.Encode()
 	if err != nil {
 		t.Errorf("error while encoding transaction: %v", err)
 	}
 
-	decoded, err1 := transaction_.Decode(e)
+	decoded, err1 := trans.Decode(e)
 	if err1 != nil {
 		t.Errorf("error while encoding transaction: %v", err1)
 	}
