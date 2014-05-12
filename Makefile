@@ -1,4 +1,4 @@
-SOURCES=$(wildcard **/*.go)
+SOURCES=$(wildcard *.go **/*.go)
 
 all: gitchain
 
