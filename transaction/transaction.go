@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/binary"
 	"gitchain/types"
+
 	"github.com/conformal/fastsha256"
 )
 

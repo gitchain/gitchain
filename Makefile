@@ -6,4 +6,4 @@ gitchain: $(SOURCES)
 	go build
 
 test:
-	go test
+	go test -v gitchain gitchain/block
