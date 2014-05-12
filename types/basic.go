@@ -9,3 +9,7 @@ func NewHash(bytes []byte) Hash {
 	}
 	return result
 }
+
+func EmptyHash() Hash {
+	return [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+}
