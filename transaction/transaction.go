@@ -1,4 +1,4 @@
-package transaction_
+package transaction
 
 import (
 	"bytes"
