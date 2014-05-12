@@ -12,6 +12,12 @@ import (
 	"github.com/conformal/fastsha256"
 )
 
+//// Interface
+
+type T interface {
+	Encode() ([]byte, error)
+}
+
 //// Name Reservation Transaction (NRT)
 const (
 	NAME_RESERVATION_VERSION        = 1
@@ -176,7 +182,7 @@ func DecodeNameDeallocation(encoded []byte) (*NameDeallocation, error) {
 
 ////////////////////////////////////
 
-func Decode(encoded []byte) (interface{}, error) {
+func Decode(encoded []byte) (T, error) {
 	var tag uint16
 	binary.Read(bytes.NewReader(encoded), binary.LittleEndian, &tag)
 	switch tag {

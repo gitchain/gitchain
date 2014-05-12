@@ -19,17 +19,8 @@ func TestNewReservation(t *testing.T) {
 func TestReservationEncodingDecoding(t *testing.T) {
 	privateKey := generateKey(t)
 	txn, _ := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	e, err := txn.Encode()
-	if err != nil {
-		t.Errorf("error while encoding transaction: %v", err)
-	}
 
-	decoded, err1 := trans.Decode(e)
-	if err1 != nil {
-		t.Errorf("error while encoding transaction: %v", err1)
-	}
-
-	assert.Equal(t, decoded, txn, "encoded and decoded transaction should be identical to the original one")
+	testTransactionEncodingDecoding(t, txn)
 }
 
 func TestNewAllocation(t *testing.T) {
@@ -51,19 +42,9 @@ func TestNewAllocation(t *testing.T) {
 func TestAllocationEncodingDecoding(t *testing.T) {
 	privateKey := generateKey(t)
 	_, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn, err := trans.NewNameAllocation("my-new-repository", rand, privateKey)
+	txn, _ := trans.NewNameAllocation("my-new-repository", rand, privateKey)
 
-	e, err := txn.Encode()
-	if err != nil {
-		t.Errorf("error while encoding transaction: %v", err)
-	}
-
-	decoded, err1 := trans.Decode(e)
-	if err1 != nil {
-		t.Errorf("error while encoding transaction: %v", err1)
-	}
-
-	assert.Equal(t, decoded, txn, "encoded and decoded transaction should be identical to the original one")
+	testTransactionEncodingDecoding(t, txn)
 }
 
 func TestNewDeallocation(t *testing.T) {
@@ -83,8 +64,13 @@ func TestNewDeallocation(t *testing.T) {
 
 func TestDeallocationEncodingDecoding(t *testing.T) {
 	privateKey := generateKey(t)
-	txn, err := trans.NewNameDeallocation("my-new-repository", privateKey)
+	txn, _ := trans.NewNameDeallocation("my-new-repository", privateKey)
+	testTransactionEncodingDecoding(t, txn)
+}
 
+////
+
+func testTransactionEncodingDecoding(t *testing.T, txn trans.T) {
 	e, err := txn.Encode()
 	if err != nil {
 		t.Errorf("error while encoding transaction: %v", err)
@@ -97,8 +83,6 @@ func TestDeallocationEncodingDecoding(t *testing.T) {
 
 	assert.Equal(t, decoded, txn, "encoded and decoded transaction should be identical to the original one")
 }
-
-////
 
 func generateKey(t *testing.T) *rsa.PrivateKey {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
