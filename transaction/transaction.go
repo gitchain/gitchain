@@ -120,6 +120,60 @@ func DecodeNameAllocation(encoded []byte) (*NameAllocation, error) {
 	return decoded, nil
 }
 
+//// Name Deallocation Transaction (NAT)
+const (
+	NAME_DEALLOCATION_VERSION        = 1
+	NAME_DEALLOCATION_TAG     uint16 = 3
+)
+
+type NameDeallocation struct {
+	Version   uint32
+	Name      string
+	Signature []byte
+}
+
+func NewNameDeallocation(name string, privateKey *rsa.PrivateKey) (txn *NameDeallocation, err error) {
+	buf := bytes.NewBuffer([]byte{})
+	binary.Write(buf, binary.LittleEndian, sha1.Sum(append([]byte("DEALLOCATE"), name...)))
+	sig, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA1, buf.Bytes())
+	return &NameDeallocation{
+			Version:   NAME_DEALLOCATION_VERSION,
+			Name:      name,
+			Signature: sig},
+		err
+}
+
+func (txn *NameDeallocation) Verify(publicKey *rsa.PublicKey) bool {
+	buf := bytes.NewBuffer([]byte{})
+	binary.Write(buf, binary.LittleEndian, sha1.Sum(append([]byte("DEALLOCATE"), txn.Name...)))
+	err := rsa.VerifyPKCS1v15(publicKey, crypto.SHA1, buf.Bytes(), txn.Signature)
+	return err == nil
+}
+
+func (txn *NameDeallocation) Encode() ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, NAME_DEALLOCATION_TAG)
+	binary.Write(buf, binary.LittleEndian, txn.Version)
+	binary.Write(buf, binary.LittleEndian, uint32(len(txn.Name)))
+
+	encoded := append(append(buf.Bytes(), []byte(txn.Name)...), txn.Signature...)
+
+	return encoded, nil
+}
+
+func DecodeNameDeallocation(encoded []byte) (*NameDeallocation, error) {
+	var version uint32
+	var nameLen uint32
+	binary.Read(bytes.NewReader(encoded[2:]), binary.LittleEndian, &version)
+	binary.Read(bytes.NewReader(encoded[6:10]), binary.LittleEndian, &nameLen)
+
+	name := string(encoded[10 : nameLen+10])
+	signature := encoded[10+nameLen:]
+	decoded := &NameDeallocation{Version: version, Name: name, Signature: signature}
+	return decoded, nil
+}
+
 ////////////////////////////////////
 
 func Decode(encoded []byte) (interface{}, error) {
@@ -131,6 +185,9 @@ func Decode(encoded []byte) (interface{}, error) {
 		return result, err
 	case NAME_ALLOCATION_TAG:
 		result, err := DecodeNameAllocation(encoded)
+		return result, err
+	case NAME_DEALLOCATION_TAG:
+		result, err := DecodeNameDeallocation(encoded)
 		return result, err
 	default:
 		return nil, nil

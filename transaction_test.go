@@ -66,6 +66,38 @@ func TestAllocationEncodingDecoding(t *testing.T) {
 	assert.Equal(t, decoded, txn, "encoded and decoded transaction should be identical to the original one")
 }
 
+func TestNewDeallocation(t *testing.T) {
+	privateKey := generateKey(t)
+	txn, err := trans.NewNameDeallocation("my-new-repository", privateKey)
+
+	if err != nil {
+		t.Errorf("error while creating name allocation transaction: %v", err)
+	}
+
+	assert.True(t, txn.Verify(&privateKey.PublicKey))
+
+	txn.Name = "my-old-repository"
+	assert.False(t, txn.Verify(&privateKey.PublicKey))
+
+}
+
+func TestDeallocationEncodingDecoding(t *testing.T) {
+	privateKey := generateKey(t)
+	txn, err := trans.NewNameDeallocation("my-new-repository", privateKey)
+
+	e, err := txn.Encode()
+	if err != nil {
+		t.Errorf("error while encoding transaction: %v", err)
+	}
+
+	decoded, err1 := trans.Decode(e)
+	if err1 != nil {
+		t.Errorf("error while encoding transaction: %v", err1)
+	}
+
+	assert.Equal(t, decoded, txn, "encoded and decoded transaction should be identical to the original one")
+}
+
 ////
 
 func generateKey(t *testing.T) *rsa.PrivateKey {
