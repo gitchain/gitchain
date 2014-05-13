@@ -9,8 +9,8 @@ import (
 	"crypto/x509"
 	"encoding/binary"
 
+	"../types"
 	"github.com/conformal/fastsha256"
-	"github.com/gitchain/gitchain/types"
 )
 
 //// Interface

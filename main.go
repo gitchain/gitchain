@@ -1,11 +1,8 @@
 package main
 
-import (
-	"github.com/gitchain/gitchain/http"
-	"github.com/gitchain/gitchain/transaction"
-)
+import "./http"
 
 func main() {
-	transaction.StartListener()
+	StartTransactionListener()
 	http.Start()
 }

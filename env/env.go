@@ -1,10 +1,10 @@
-package main
+package env
 
 import (
 	"flag"
 	"log"
 
-	"github.com/gitchain/gitchain/db"
+	"../db"
 )
 
 var DB *db.T

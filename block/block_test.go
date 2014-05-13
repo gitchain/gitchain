@@ -5,8 +5,8 @@ import (
 	"crypto/rsa"
 	"testing"
 
-	trans "github.com/gitchain/gitchain/transaction"
-	"github.com/gitchain/gitchain/types"
+	trans "../transaction"
+	"../types"
 	"github.com/stretchr/testify/assert"
 )
 

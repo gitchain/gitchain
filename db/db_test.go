@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gitchain/gitchain/transaction"
+	"../transaction"
 	"github.com/stretchr/testify/assert"
 )
 
