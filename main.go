@@ -1,8 +1,6 @@
 package main
 
-import (
-	"gitchain/http"
-)
+import "gitchain/http"
 
 func main() {
 	http.Start()
