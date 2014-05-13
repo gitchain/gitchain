@@ -16,6 +16,7 @@ import (
 //// Interface
 
 type T interface {
+	Id() []byte
 	Encode() ([]byte, error)
 }
 
@@ -55,6 +56,14 @@ func (txn *NameReservation) Encode() ([]byte, error) {
 	encoded := append(append(buf.Bytes(), txn.Hash[:]...), pubkey...)
 
 	return encoded, nil
+}
+
+func (txn *NameReservation) Id() []byte {
+	buf := bytes.NewBuffer([]byte{})
+	buf.Grow(32)
+	encoded, _ := txn.Encode()
+	binary.Write(buf, binary.BigEndian, fastsha256.Sum256(encoded))
+	return buf.Bytes()
 }
 
 func DecodeNameReservation(encoded []byte) (*NameReservation, error) {
@@ -114,6 +123,14 @@ func (txn *NameAllocation) Encode() ([]byte, error) {
 	return encoded, nil
 }
 
+func (txn *NameAllocation) Id() []byte {
+	buf := bytes.NewBuffer([]byte{})
+	buf.Grow(32)
+	encoded, _ := txn.Encode()
+	binary.Write(buf, binary.BigEndian, fastsha256.Sum256(encoded))
+	return buf.Bytes()
+}
+
 func DecodeNameAllocation(encoded []byte) (*NameAllocation, error) {
 	var version uint32
 	var nameLen uint32
@@ -167,6 +184,14 @@ func (txn *NameDeallocation) Encode() ([]byte, error) {
 	encoded := append(append(buf.Bytes(), []byte(txn.Name)...), txn.Signature...)
 
 	return encoded, nil
+}
+
+func (txn *NameDeallocation) Id() []byte {
+	buf := bytes.NewBuffer([]byte{})
+	buf.Grow(32)
+	encoded, _ := txn.Encode()
+	binary.Write(buf, binary.BigEndian, fastsha256.Sum256(encoded))
+	return buf.Bytes()
 }
 
 func DecodeNameDeallocation(encoded []byte) (*NameDeallocation, error) {

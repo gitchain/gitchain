@@ -6,4 +6,4 @@ gitchain: $(SOURCES)
 	go build
 
 test:
-	go test gitchain/block gitchain/transaction
+	go test gitchain/block gitchain/transaction gitchain/db
