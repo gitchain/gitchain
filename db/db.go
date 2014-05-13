@@ -66,3 +66,41 @@ func (db *T) GetTransaction(id []byte) (transaction.T, error) {
 	}
 	return decodedTx, nil
 }
+
+func (db *T) PutKey(alias string, key []byte) error {
+	dbtx, err := db.DB.Begin(true)
+	success := false
+	defer func() {
+		if success {
+			dbtx.Commit()
+		} else {
+			dbtx.Rollback()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	bucket, err := dbtx.CreateBucketIfNotExists([]byte("keys"))
+	if err != nil {
+		return err
+	}
+	err = bucket.Put([]byte(alias), key)
+	if err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+func (db *T) GetKey(alias string) []byte {
+	dbtx, err := db.DB.Begin(false)
+	defer dbtx.Rollback()
+	if err != nil {
+		return nil
+	}
+	bucket := dbtx.Bucket([]byte("keys"))
+	if bucket == nil {
+		return nil
+	}
+	return bucket.Get([]byte(alias))
+}
