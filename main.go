@@ -1,8 +1,8 @@
 package main
 
 import (
-	"gitchain/http"
-	"gitchain/transaction"
+	"github.com/gitchain/gitchain/http"
+	"github.com/gitchain/gitchain/transaction"
 )
 
 func main() {

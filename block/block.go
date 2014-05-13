@@ -3,12 +3,12 @@ package block
 import (
 	"bytes"
 	"encoding/binary"
-	trans "gitchain/transaction"
-	"gitchain/types"
 	"math/big"
 	"time"
 
 	"github.com/conformal/fastsha256"
+	trans "github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 	"github.com/xsleonard/go-merkle"
 )
 

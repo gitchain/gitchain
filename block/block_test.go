@@ -3,10 +3,10 @@ package block
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	trans "gitchain/transaction"
-	"gitchain/types"
 	"testing"
 
+	trans "github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 	"github.com/stretchr/testify/assert"
 )
 

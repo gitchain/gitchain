@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"gitchain/db"
 	"log"
+
+	"github.com/gitchain/gitchain/db"
 )
 
 var DB *db.T

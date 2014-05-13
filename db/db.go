@@ -2,9 +2,9 @@ package db
 
 import (
 	"errors"
-	"gitchain/transaction"
 
 	"github.com/boltdb/bolt"
+	"github.com/gitchain/gitchain/transaction"
 )
 
 type T struct {

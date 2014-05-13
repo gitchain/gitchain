@@ -12,7 +12,8 @@ func Broadcast(tx T) {
 }
 
 func listener() {
+	//var msg T
 loop:
-	_ = <-ch
+	<-ch
 	goto loop
 }
