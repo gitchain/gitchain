@@ -104,3 +104,21 @@ func (db *T) GetKey(alias string) []byte {
 	}
 	return bucket.Get([]byte(alias))
 }
+
+func (db *T) ListKeys() []string {
+	dbtx, err := db.DB.Begin(false)
+	defer dbtx.Rollback()
+	if err != nil {
+		return nil
+	}
+	bucket := dbtx.Bucket([]byte("keys"))
+	if bucket == nil {
+		return nil
+	}
+	keys := make([]string, 0)
+	bucket.ForEach(func(k, v []byte) error {
+		keys = append(keys, string(k))
+		return nil
+	})
+	return keys
+}
