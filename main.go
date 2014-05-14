@@ -13,6 +13,7 @@ import (
 	"./api"
 	"./env"
 	"./keys"
+	"./server"
 
 	"github.com/gorilla/rpc/json"
 )
@@ -90,10 +91,10 @@ func main() {
 		}
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord this random number for use during allocation: %s\n", name, resp.Id, resp.Random)
 	case "Serve":
-		StartTransactionListener()
+		server.StartTransactionListener()
 		api.Start()
 	default:
-		StartTransactionListener()
+		server.StartTransactionListener()
 		api.Start()
 	}
 

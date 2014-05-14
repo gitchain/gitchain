@@ -1,8 +1,8 @@
-package main
+package server
 
 import (
-	"./env"
-	"./transaction"
+	"../env"
+	"../transaction"
 )
 
 var ch chan transaction.T
