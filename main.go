@@ -91,8 +91,7 @@ func main() {
 		}
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord this random number for use during allocation: %s\n", name, resp.Id, resp.Random)
 	case "Serve":
-		server.StartTransactionListener()
-		api.Start()
+		fallthrough
 	default:
 		server.StartTransactionListener()
 		api.Start()
