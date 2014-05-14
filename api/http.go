@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"../env"
@@ -59,5 +60,6 @@ func Start() {
 		return 404, params["path"]
 	})
 
-	m.Run()
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", env.Port), m))
+
 }
