@@ -3,11 +3,11 @@ package api
 import (
 	"crypto/x509"
 	"encoding/hex"
-	"fmt"
 	"net/http"
 
 	"../env"
 	"../keys"
+	"../server"
 	"../transaction"
 
 	"github.com/gorilla/rpc"
@@ -71,17 +71,16 @@ type NameReservationReply struct {
 
 func (srv *NameService) NameReservation(r *http.Request, args *NameReservationArgs, reply *NameReservationReply) error {
 	pemBlock, err := keys.ReadPEM(env.DB.GetKey(args.Alias), false)
-	fmt.Println(pemBlock)
 	if err != nil {
 		return err
 	}
 	privateKey, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
-	fmt.Println(privateKey)
 	if err != nil {
 		return err
 	}
 	tx, random := transaction.NewNameReservation(args.Name, &privateKey.PublicKey)
 	reply.Id = hex.EncodeToString(tx.Id())
 	reply.Random = hex.EncodeToString(random)
+	server.BroadcastTransaction(tx)
 	return nil
 }
