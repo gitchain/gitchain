@@ -23,7 +23,7 @@ type T interface {
 //// Name Reservation Transaction (NRT)
 const (
 	NAME_RESERVATION_VERSION        = 1
-	NAME_RESERVATION_TAG     uint16 = 1
+	NAME_RESERVATION_TAG     uint16 = 0x0001
 )
 
 type NameReservation struct {
@@ -82,7 +82,7 @@ func DecodeNameReservation(encoded []byte) (*NameReservation, error) {
 //// Name Allocation Transaction (NAT)
 const (
 	NAME_ALLOCATION_VERSION        = 1
-	NAME_ALLOCATION_TAG     uint16 = 2
+	NAME_ALLOCATION_TAG     uint16 = 0x0002
 )
 
 type NameAllocation struct {
@@ -147,7 +147,7 @@ func DecodeNameAllocation(encoded []byte) (*NameAllocation, error) {
 //// Name Deallocation Transaction (NAT)
 const (
 	NAME_DEALLOCATION_VERSION        = 1
-	NAME_DEALLOCATION_TAG     uint16 = 3
+	NAME_DEALLOCATION_TAG     uint16 = 0x0003
 )
 
 type NameDeallocation struct {
