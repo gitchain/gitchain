@@ -65,10 +65,6 @@ func main() {
 		}
 
 	case "ListPrivateKeys":
-		if len(flag.Args()) < 1 {
-			fmt.Println("Alias required: gitchain ListPrivateKeys")
-			os.Exit(1)
-		}
 		var resp api.ListPrivateKeysReply
 		err := jsonrpc("KeyService.ListPrivateKeys", &api.ListPrivateKeysArgs{}, &resp)
 		if err != nil {
@@ -80,7 +76,19 @@ func main() {
 		}
 
 	case "NameReservation":
-		http.Post(fmt.Sprintf("http://localhost:%d/tx/NameReservation", env.Port), "application/json", nil)
+		if len(flag.Args()) < 3 {
+			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name>")
+			os.Exit(1)
+		}
+		alias := flag.Arg(1)
+		name := flag.Arg(2)
+		var resp api.NameReservationReply
+		err := jsonrpc("NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: name}, &resp)
+		if err != nil {
+			fmt.Printf("Can't make a name reservation because of %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord this random number for use during allocation: %s\n", name, resp.Id, resp.Random)
 	case "Serve":
 		StartTransactionListener()
 		api.Start()

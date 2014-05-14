@@ -20,10 +20,6 @@ func Start() {
 	m.MapTo(r, (*martini.Routes)(nil))
 	m.Action(r.Handle)
 	// Gitchain API
-	r.Post("/tx/NameReservation", func() string {
-		return "wait for it"
-	})
-
 	r.Post("/rpc", jsonRpcService().ServeHTTP)
 
 	// Git Server
