@@ -34,7 +34,8 @@ loop:
 		transactionsPool = append(transactionsPool, msg)
 		blk = block.NewBlock(previousBlockHash, 0x1e00ffff, transactionsPool)
 		miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
-	case <-blockChannel:
+	case newMinedBlock := <-blockChannel:
+		env.DB.PutBlock(newMinedBlock, true)
 		transactionsPool = make([]transaction.T, 0)
 	}
 	goto loop

@@ -84,8 +84,8 @@ func TestPutGetBlock(t *testing.T) {
 
 	// Attempt fetching the last one
 	block1, err = db.GetLastBlock()
-	if err == nil {
-		t.Errorf("error getting block, there should be no last block")
+	if err != nil {
+		t.Errorf("error getting block: %v", err)
 	}
 	if block1 != nil {
 		t.Errorf("error getting block, there should be no last block")

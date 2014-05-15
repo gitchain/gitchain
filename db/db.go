@@ -185,11 +185,11 @@ func (db *T) GetLastBlock() (*block.Block, error) {
 	}
 	bucket := dbtx.Bucket([]byte("blocks"))
 	if bucket == nil {
-		return nil, errors.New("blocks bucket does not exist")
+		return nil, nil
 	}
 	last := bucket.Get([]byte("last"))
 	if last == nil {
-		return nil, errors.New("no last block not found")
+		return nil, nil
 	}
 	b := bucket.Get(last)
 	if b == nil {
