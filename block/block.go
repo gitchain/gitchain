@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/conformal/fastsha256"
 	trans "github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
-	"github.com/conformal/fastsha256"
 	"github.com/xsleonard/go-merkle"
 )
 
@@ -100,6 +100,9 @@ func Decode(encoded []byte) (*Block, error) {
 }
 
 func merkleRoot(data [][]byte) (types.Hash, error) {
+	if len(data) == 1 { // FIXME: a workaround for trees with one element
+		data = append(data, []byte{})
+	}
 	tree := merkle.NewTree()
 	err := tree.Generate(data, fastsha256.New())
 	if err != nil {
