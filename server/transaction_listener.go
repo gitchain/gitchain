@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"log"
@@ -67,7 +68,13 @@ loop:
 			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
 	case blk = <-blockChannel:
-		env.DB.PutBlock(blk, true)
+		if blk, _ = env.DB.GetLastBlock(); blk == nil {
+			previousBlockHash = types.EmptyHash()
+		} else {
+			previousBlockHash = types.NewHash(blk.Hash())
+		}
+		isLastBlock := bytes.Compare(blk.PreviousBlockHash[:], previousBlockHash[:]) == 0
+		env.DB.PutBlock(blk, isLastBlock)
 		goto initPool
 	}
 	goto loop
