@@ -42,8 +42,9 @@ loop:
 		blk, err := block.NewBlock(previousBlockHash, 0x1e00ffff, transactionsPool)
 		if err != nil {
 			log.Printf("Error while creating a new block: %v", err)
+		} else {
+			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
-		miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 	case blk = <-blockChannel:
 		env.DB.PutBlock(blk, true)
 		transactionsPool = make([]transaction.T, 0)
