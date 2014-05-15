@@ -23,7 +23,7 @@ func TestPutGetTransaction(t *testing.T) {
 	if err != nil {
 		t.Errorf("error putting transaction: %v", err)
 	}
-	txn1, err := db.GetTransaction(txn.Id())
+	txn1, err := db.GetTransaction(txn.Hash())
 	if err != nil {
 		t.Errorf("error getting transaction: %v", err)
 	}

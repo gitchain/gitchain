@@ -79,7 +79,7 @@ func (srv *NameService) NameReservation(r *http.Request, args *NameReservationAr
 		return err
 	}
 	tx, random := transaction.NewNameReservation(args.Name, &privateKey.PublicKey)
-	reply.Id = hex.EncodeToString(tx.Id())
+	reply.Id = hex.EncodeToString(tx.Hash())
 	reply.Random = hex.EncodeToString(random)
 	server.BroadcastTransaction(tx)
 	return nil

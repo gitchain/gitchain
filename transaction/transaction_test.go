@@ -12,7 +12,7 @@ func TestNewReservation(t *testing.T) {
 	privateKey := generateKey(t)
 	txn, rand := NewNameReservation("my-new-repository", &privateKey.PublicKey)
 	txn1, rand1 := NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	assert.NotEqual(t, txn.Hash, txn1.Hash, "hashes should not be equal")
+	assert.NotEqual(t, txn.Hashed, txn1.Hashed, "hashed value should not be equal")
 	assert.NotEqual(t, rand, rand1, "random numbers should not be equal")
 }
 
@@ -71,17 +71,16 @@ func TestDeallocationEncodingDecoding(t *testing.T) {
 ////
 
 func testTransactionEncodingDecoding(t *testing.T, txn T) {
-	e, err := txn.Encode()
+	enc, err := txn.Encode()
 	if err != nil {
 		t.Errorf("error while encoding transaction: %v", err)
 	}
 
-	decoded, err1 := Decode(e)
-	if err1 != nil {
-		t.Errorf("error while encoding transaction: %v", err1)
+	txn1, err := Decode(enc)
+	if err != nil {
+		t.Errorf("error while encoding transaction: %v", err)
 	}
-
-	assert.Equal(t, decoded, txn, "encoded and decoded transaction should be identical to the original one")
+	assert.Equal(t, txn1, txn, "encoded and decoded transaction should be identical to the original one")
 }
 
 func generateKey(t *testing.T) *rsa.PrivateKey {

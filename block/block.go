@@ -3,6 +3,7 @@ package block
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
 	"time"
@@ -18,6 +19,10 @@ const (
 )
 
 const (
+	BLOCK_TAG uint16 = 0xff00
+)
+
+const (
 	BLOCK_VERSION = 1
 )
 
@@ -28,7 +33,11 @@ type Block struct {
 	Timestamp         int64
 	Bits              uint32
 	Nonce             uint32
-	Transactions      [][]byte
+	Transactions      []trans.T
+}
+
+func init() {
+	gob.Register(&Block{})
 }
 
 func (b *Block) Hash() []byte {
@@ -69,7 +78,22 @@ func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []trans.T)
 		Timestamp:         time.Now().UTC().Unix(),
 		Bits:              bits,
 		Nonce:             0,
-		Transactions:      encodedTransactions}
+		Transactions:      transactions}
+}
+
+func (b *Block) Encode() ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(&b)
+	return buf.Bytes(), err
+}
+
+func Decode(encoded []byte) (*Block, error) {
+	var blk Block
+	buf := bytes.NewBuffer(encoded)
+	enc := gob.NewDecoder(buf)
+	err := enc.Decode(&blk)
+	return &blk, err
 }
 
 func merkleRoot(data [][]byte) (types.Hash, error) {

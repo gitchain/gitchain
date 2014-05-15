@@ -19,12 +19,28 @@ func TestNewBlock(t *testing.T) {
 	transactions := []trans.T{txn1, txn2, txn3}
 	block1 := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 
-	decodedTransactions := make([]trans.T, 3)
-	for i := range block1.Transactions {
-		decodedTransactions[i], _ = trans.Decode(block1.Transactions[i])
+	assert.Equal(t, transactions, block1.Transactions)
+}
+
+func TestEncodeDecode(t *testing.T) {
+	privateKey := generateKey(t)
+	txn1, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn2, _ := trans.NewNameAllocation("my-new-repository", rand, privateKey)
+	txn3, _ := trans.NewNameDeallocation("my-new-repository", privateKey)
+
+	transactions := []trans.T{txn1, txn2, txn3}
+	block := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+
+	enc, err := block.Encode()
+	if err != nil {
+		t.Errorf("error while encoding block: %v", err)
 	}
 
-	assert.Equal(t, transactions, decodedTransactions)
+	block1, err := Decode(enc)
+	if err != nil {
+		t.Errorf("error while encoding block: %v", err)
+	}
+	assert.Equal(t, block, block1, "encoded and decoded block should be identical to the original one")
 }
 
 func TestTargetFromBits(t *testing.T) {

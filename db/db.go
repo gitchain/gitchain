@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 
+	"../block"
 	"../transaction"
 	"github.com/boltdb/bolt"
 )
@@ -38,7 +39,7 @@ func (db *T) PutTransaction(txn transaction.T) error {
 	if err != nil {
 		return err
 	}
-	err = bucket.Put(txn.Id(), encodedTx)
+	err = bucket.Put(txn.Hash(), encodedTx)
 	if err != nil {
 		return err
 	}
@@ -121,4 +122,54 @@ func (db *T) ListKeys() []string {
 		return nil
 	})
 	return keys
+}
+
+func (db *T) PutBlock(b *block.Block) error {
+	dbtx, err := db.DB.Begin(true)
+	success := false
+	defer func() {
+		if success {
+			dbtx.Commit()
+		} else {
+			dbtx.Rollback()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	bucket, err := dbtx.CreateBucketIfNotExists([]byte("blocks"))
+	if err != nil {
+		return err
+	}
+	encoded, err := b.Encode()
+	if err != nil {
+		return err
+	}
+	err = bucket.Put(b.Hash(), encoded)
+	if err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+func (db *T) GetBlock(hash []byte) (*block.Block, error) {
+	dbtx, err := db.DB.Begin(false)
+	defer dbtx.Rollback()
+	if err != nil {
+		return nil, err
+	}
+	bucket := dbtx.Bucket([]byte("blocks"))
+	if bucket == nil {
+		return nil, errors.New("blocks bucket does not exist")
+	}
+	b := bucket.Get(hash)
+	if b == nil {
+		return nil, errors.New("block not found")
+	}
+	decodedBlock, err := block.Decode(b)
+	if err != nil {
+		return decodedBlock, err
+	}
+	return decodedBlock, nil
 }
