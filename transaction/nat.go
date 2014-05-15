@@ -1,3 +1,4 @@
+//// Name Allocation Transaction (NAT)
 package transaction
 
 import (
@@ -7,9 +8,13 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/binary"
+	"encoding/gob"
 )
 
-//// Name Allocation Transaction (NAT)
+func init() {
+	gob.Register(&NameAllocation{})
+}
+
 const (
 	NAME_ALLOCATION_VERSION = 1
 )

@@ -1,3 +1,4 @@
+//// Name Deallocation Transaction (NDT)
 package transaction
 
 import (
@@ -7,9 +8,13 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/binary"
+	"encoding/gob"
 )
 
-//// Name Deallocation Transaction (NDT)
+func init() {
+	gob.Register(&NameDeallocation{})
+}
+
 const (
 	NAME_DEALLOCATION_VERSION = 1
 )

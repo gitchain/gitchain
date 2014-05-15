@@ -15,12 +15,6 @@ type T interface {
 	Hash() []byte
 }
 
-func init() {
-	gob.Register(&NameReservation{})
-	gob.Register(&NameAllocation{})
-	gob.Register(&NameDeallocation{})
-}
-
 func hash(t T) []byte {
 	buf := new(bytes.Buffer)
 	gob.NewEncoder(buf).Encode(t)

@@ -68,6 +68,26 @@ func TestDeallocationEncodingDecoding(t *testing.T) {
 	testTransactionEncodingDecoding(t, txn)
 }
 
+func TestNewAttribution(t *testing.T) {
+	privateKey := generateKey(t)
+	txn, err := NewBlockAttribution(privateKey)
+
+	if err != nil {
+		t.Errorf("error while creating name allocation transaction: %v", err)
+	}
+
+	assert.True(t, txn.Verify(&privateKey.PublicKey))
+	txn.Signature = []byte("boom")
+	assert.False(t, txn.Verify(&privateKey.PublicKey))
+
+}
+
+func TestAttributionEncodingDecoding(t *testing.T) {
+	privateKey := generateKey(t)
+	txn, _ := NewBlockAttribution(privateKey)
+	testTransactionEncodingDecoding(t, txn)
+}
+
 ////
 
 func testTransactionEncodingDecoding(t *testing.T, txn T) {

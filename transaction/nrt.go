@@ -1,14 +1,19 @@
+//// Name Reservation Transaction (NRT)
 package transaction
 
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/gob"
 
 	"github.com/conformal/fastsha256"
 	"github.com/gitchain/gitchain/types"
 )
 
-//// Name Reservation Transaction (NRT)
+func init() {
+	gob.Register(&NameReservation{})
+}
+
 const (
 	NAME_RESERVATION_VERSION = 1
 )
