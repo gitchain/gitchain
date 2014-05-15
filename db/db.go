@@ -124,7 +124,7 @@ func (db *T) ListKeys() []string {
 	return keys
 }
 
-func (db *T) PutBlock(b *block.Block) error {
+func (db *T) PutBlock(b *block.Block, last bool) error {
 	dbtx, err := db.DB.Begin(true)
 	success := false
 	defer func() {
@@ -149,6 +149,9 @@ func (db *T) PutBlock(b *block.Block) error {
 	if err != nil {
 		return err
 	}
+	if last {
+		bucket.Put([]byte("last"), b.Hash())
+	}
 	success = true
 	return nil
 }
@@ -164,6 +167,31 @@ func (db *T) GetBlock(hash []byte) (*block.Block, error) {
 		return nil, errors.New("blocks bucket does not exist")
 	}
 	b := bucket.Get(hash)
+	if b == nil {
+		return nil, errors.New("block not found")
+	}
+	decodedBlock, err := block.Decode(b)
+	if err != nil {
+		return decodedBlock, err
+	}
+	return decodedBlock, nil
+}
+
+func (db *T) GetLastBlock() (*block.Block, error) {
+	dbtx, err := db.DB.Begin(false)
+	defer dbtx.Rollback()
+	if err != nil {
+		return nil, err
+	}
+	bucket := dbtx.Bucket([]byte("blocks"))
+	if bucket == nil {
+		return nil, errors.New("blocks bucket does not exist")
+	}
+	last := bucket.Get([]byte("last"))
+	if last == nil {
+		return nil, errors.New("no last block not found")
+	}
+	b := bucket.Get(last)
 	if b == nil {
 		return nil, errors.New("block not found")
 	}
