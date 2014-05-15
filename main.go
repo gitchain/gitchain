@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/pem"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"os"
 
@@ -140,7 +142,8 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Previous block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %#x\nNonce: %v\nTransactions: %d\n",
-			resp.PreviousBlockHash, resp.MerkleRootHash, resp.Timestamp, resp.Bits, resp.Nonce, resp.NumTransactions)
+			hex.EncodeToString(resp.PreviousBlockHash[:]), hex.EncodeToString(resp.MerkleRootHash[:]),
+			time.Unix(resp.Timestamp, 0).String(), resp.Bits, resp.Nonce, resp.NumTransactions)
 	case "Info":
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", env.Port))
 		if err != nil {
