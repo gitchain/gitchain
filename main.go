@@ -90,6 +90,28 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord this random number for use during allocation: %s\n", name, resp.Id, resp.Random)
+	case "LastBlock":
+		var resp api.GetLastBlockReply
+		err := jsonrpc("BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
+		if err != nil {
+			fmt.Printf("Can't get a block because of %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("%s\n", resp.Hash)
+	case "Block":
+		if len(flag.Args()) < 2 {
+			fmt.Println("Command format required: gitchain Block <block hash>")
+			os.Exit(1)
+		}
+		hash := flag.Arg(1)
+		var resp api.GetBlockReply
+		err := jsonrpc("BlockService.GetBlock", &api.GetBlockArgs{Hash: hash}, &resp)
+		if err != nil {
+			fmt.Printf("Can't get a block because of %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Previous block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %v\nNonce: %v\nTransactions: %d\n",
+			resp.PreviousBlockHash, resp.MerkleRootHash, resp.Timestamp, resp.Bits, resp.Nonce, resp.NumTransactions)
 	case "Info":
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", env.Port))
 		if err != nil {

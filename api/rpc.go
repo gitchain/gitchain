@@ -9,6 +9,7 @@ import (
 	"../keys"
 	"../server"
 	"../transaction"
+	"../types"
 
 	"github.com/gorilla/rpc"
 	"github.com/gorilla/rpc/json"
@@ -19,6 +20,7 @@ func jsonRpcService() *rpc.Server {
 	s.RegisterCodec(json.NewCodec(), "application/json")
 	s.RegisterService(new(KeyService), "")
 	s.RegisterService(new(NameService), "")
+	s.RegisterService(new(BlockService), "")
 	return s
 }
 
@@ -82,5 +84,55 @@ func (srv *NameService) NameReservation(r *http.Request, args *NameReservationAr
 	reply.Id = hex.EncodeToString(tx.Hash())
 	reply.Random = hex.EncodeToString(random)
 	server.BroadcastTransaction(tx)
+	return nil
+}
+
+// BlockService
+type BlockService struct{}
+
+type GetLastBlockArgs struct {
+}
+
+type GetLastBlockReply struct {
+	Hash string
+}
+
+func (srv *BlockService) GetLastBlock(r *http.Request, args *GetLastBlockArgs, reply *GetLastBlockReply) error {
+	block, err := env.DB.GetLastBlock()
+	if err != nil {
+		return err
+	}
+	reply.Hash = hex.EncodeToString(block.Hash())
+	return nil
+}
+
+type GetBlockArgs struct {
+	Hash string
+}
+
+type GetBlockReply struct {
+	PreviousBlockHash types.Hash
+	MerkleRootHash    types.Hash
+	Timestamp         int64
+	Bits              uint32
+	Nonce             uint32
+	NumTransactions   int
+}
+
+func (srv *BlockService) GetBlock(r *http.Request, args *GetBlockArgs, reply *GetBlockReply) error {
+	hash, err := hex.DecodeString(args.Hash)
+	if err != nil {
+		return err
+	}
+	block, err := env.DB.GetBlock(hash)
+	if err != nil {
+		return err
+	}
+	reply.PreviousBlockHash = block.PreviousBlockHash
+	reply.MerkleRootHash = block.MerkleRootHash
+	reply.Timestamp = block.Timestamp
+	reply.Bits = block.Bits
+	reply.Nonce = block.Nonce
+	reply.NumTransactions = len(block.Transactions)
 	return nil
 }
