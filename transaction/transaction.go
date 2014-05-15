@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 
-	"../types"
+	"github.com/gitchain/gitchain/types"
 
 	"github.com/conformal/fastsha256"
 )

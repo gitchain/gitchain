@@ -5,8 +5,8 @@ import (
 	"crypto/rsa"
 	"testing"
 
-	trans "../transaction"
-	"../types"
+	trans "github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,10 +17,30 @@ func TestNewBlock(t *testing.T) {
 	txn3, _ := trans.NewNameDeallocation("my-new-repository", privateKey)
 
 	transactions := []trans.T{txn1, txn2, txn3}
-	block1 := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+	block1, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+	}
 
 	assert.Equal(t, transactions, block1.Transactions)
-	assert.NotEqual(t, block1.MerkleRootHash, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+	assert.NotEqual(t, block1.MerkleRootHash, types.EmptyHash())
+}
+
+func TestNewBlockSingleTx(t *testing.T) {
+	privateKey := generateKey(t)
+	txn1, _ := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+
+	transactions := []trans.T{txn1}
+	block1, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+		return
+	}
+
+	assert.Equal(t, transactions, block1.Transactions)
+	assert.NotEqual(t, block1.MerkleRootHash, types.EmptyHash())
 }
 
 func TestEncodeDecode(t *testing.T) {
@@ -30,7 +50,10 @@ func TestEncodeDecode(t *testing.T) {
 	txn3, _ := trans.NewNameDeallocation("my-new-repository", privateKey)
 
 	transactions := []trans.T{txn1, txn2, txn3}
-	block := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+	block, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+	}
 
 	enc, err := block.Encode()
 	if err != nil {

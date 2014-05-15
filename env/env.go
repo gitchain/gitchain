@@ -4,7 +4,7 @@ import (
 	"flag"
 	"log"
 
-	"../db"
+	"github.com/gitchain/gitchain/db"
 )
 
 var DB *db.T

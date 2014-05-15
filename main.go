@@ -10,10 +10,10 @@ import (
 
 	"os"
 
-	"./api"
-	"./env"
-	"./keys"
-	"./server"
+	"github.com/gitchain/gitchain/api"
+	"github.com/gitchain/gitchain/env"
+	"github.com/gitchain/gitchain/keys"
+	"github.com/gitchain/gitchain/server"
 
 	"github.com/gorilla/rpc/json"
 )

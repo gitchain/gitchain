@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"../block"
-	"../transaction"
-	"../types"
+	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,7 +61,10 @@ func TestPutGetBlock(t *testing.T) {
 	txn3, _ := transaction.NewNameDeallocation("my-new-repository", privateKey)
 
 	transactions := []transaction.T{txn1, txn2, txn3}
-	block := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
+	block, err := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+	}
 
 	db, err := NewDB("test.db")
 	defer os.Remove("test.db")

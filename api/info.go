@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"../block"
-	"../env"
-	"../server"
+	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/env"
+	"github.com/gitchain/gitchain/server"
 )
 
 type Info struct {

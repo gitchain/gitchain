@@ -1,10 +1,12 @@
 package server
 
 import (
-	"../block"
-	"../env"
-	"../transaction"
-	"../types"
+	"log"
+
+	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/env"
+	"github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 )
 
 var ch chan transaction.T
@@ -37,7 +39,10 @@ loop:
 		} else {
 			previousBlockHash = types.NewHash(blk.Hash())
 		}
-		blk = block.NewBlock(previousBlockHash, 0x1e00ffff, transactionsPool)
+		blk, err := block.NewBlock(previousBlockHash, 0x1e00ffff, transactionsPool)
+		if err != nil {
+			log.Printf("Error while creating a new block: %v", err)
+		}
 		miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 	case blk = <-blockChannel:
 		env.DB.PutBlock(blk, true)

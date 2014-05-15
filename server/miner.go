@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"../block"
+	"github.com/gitchain/gitchain/block"
 )
 
 type Miner struct {

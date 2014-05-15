@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"time"
 
-	trans "../transaction"
-	"../types"
+	trans "github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 	"github.com/conformal/fastsha256"
 	"github.com/xsleonard/go-merkle"
 )
@@ -63,14 +63,17 @@ func (b *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hex.EncodeToString(b.Hash()))
 }
 
-func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []trans.T) *Block {
+func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []trans.T) (*Block, error) {
 	encodedTransactions := make([][]byte, len(transactions))
 	for i := range transactions {
 		t, _ := transactions[i].Encode()
 		encodedTransactions[i] = make([]byte, len(t))
 		copy(encodedTransactions[i], t)
 	}
-	merkleRootHash, _ := merkleRoot(encodedTransactions)
+	merkleRootHash, err := merkleRoot(encodedTransactions)
+	if err != nil {
+		return nil, err
+	}
 	return &Block{
 		Version:           BLOCK_VERSION,
 		PreviousBlockHash: previousBlockHash,
@@ -78,7 +81,7 @@ func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []trans.T)
 		Timestamp:         time.Now().UTC().Unix(),
 		Bits:              bits,
 		Nonce:             0,
-		Transactions:      transactions}
+		Transactions:      transactions}, nil
 }
 
 func (b *Block) Encode() ([]byte, error) {

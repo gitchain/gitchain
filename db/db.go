@@ -3,8 +3,8 @@ package db
 import (
 	"errors"
 
-	"../block"
-	"../transaction"
+	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/transaction"
 	"github.com/boltdb/bolt"
 )
 

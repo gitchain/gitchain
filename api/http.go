@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"../env"
+	"github.com/gitchain/gitchain/env"
 
 	"github.com/go-martini/martini"
 )

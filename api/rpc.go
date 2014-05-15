@@ -3,13 +3,14 @@ package api
 import (
 	"crypto/x509"
 	"encoding/hex"
+	"log"
 	"net/http"
 
-	"../env"
-	"../keys"
-	"../server"
-	"../transaction"
-	"../types"
+	"github.com/gitchain/gitchain/env"
+	"github.com/gitchain/gitchain/keys"
+	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 
 	"github.com/gorilla/rpc"
 	"github.com/gorilla/rpc/json"
@@ -128,6 +129,7 @@ func (srv *BlockService) GetBlock(r *http.Request, args *GetBlockArgs, reply *Ge
 	if err != nil {
 		return err
 	}
+	log.Printf("%+v", block)
 	reply.PreviousBlockHash = block.PreviousBlockHash
 	reply.MerkleRootHash = block.MerkleRootHash
 	reply.Timestamp = block.Timestamp
