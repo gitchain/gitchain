@@ -110,7 +110,7 @@ func main() {
 			fmt.Printf("Can't get a block because of %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Previous block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %v\nNonce: %v\nTransactions: %d\n",
+		fmt.Printf("Previous block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %#x\nNonce: %v\nTransactions: %d\n",
 			resp.PreviousBlockHash, resp.MerkleRootHash, resp.Timestamp, resp.Bits, resp.Nonce, resp.NumTransactions)
 	case "Info":
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", env.Port))
