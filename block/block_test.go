@@ -20,6 +20,7 @@ func TestNewBlock(t *testing.T) {
 	block1 := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 
 	assert.Equal(t, transactions, block1.Transactions)
+	assert.NotEqual(t, block1.MerkleRootHash, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
 func TestEncodeDecode(t *testing.T) {
