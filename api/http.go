@@ -1,15 +1,21 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
 	"../env"
+	"../server"
 
 	"github.com/go-martini/martini"
 )
+
+type Info struct {
+	Mining server.MiningStatus
+}
 
 func Start() {
 
@@ -21,6 +27,14 @@ func Start() {
 	m.Action(r.Handle)
 	// Gitchain API
 	r.Post("/rpc", jsonRpcService().ServeHTTP)
+	r.Get("/info", func(resp http.ResponseWriter) string {
+		json, err := json.Marshal(Info{Mining: server.GetMiningStatus()})
+		if err != nil {
+			log.Printf("Error while serving /info: %v", err)
+		}
+		resp.Header().Add("Content-Type", "application/json")
+		return string(json)
+	})
 
 	// Git Server
 	r.Post("^(?P<path>.*)/git-upload-pack$", func(params martini.Params, req *http.Request) string {

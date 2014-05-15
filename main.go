@@ -90,9 +90,23 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord this random number for use during allocation: %s\n", name, resp.Id, resp.Random)
+	case "Info":
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", env.Port))
+		if err != nil {
+			fmt.Printf("Can't retrieve info because of %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("Can't retrieve info because of %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println(string(body))
 	case "Serve":
 		fallthrough
 	default:
+		go server.StartMiningFactory()
 		server.StartTransactionListener()
 		api.Start()
 	}

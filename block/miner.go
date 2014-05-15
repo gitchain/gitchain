@@ -9,7 +9,7 @@ import (
 	"github.com/conformal/fastsha256"
 )
 
-func (b *Block) Mine() {
+func (b *Block) Mine(c chan *Block) {
 	target := targetFromBits(b.Bits)
 	i := big.NewInt(int64(0))
 	var n uint32
@@ -35,6 +35,7 @@ loop:
 		buf.Reset()
 		if i.Cmp(target) == -1 {
 			b.Nonce = n
+			c <- b
 			return
 		}
 	}

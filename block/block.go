@@ -1,6 +1,10 @@
 package block
 
 import (
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"time"
 
 	trans "../transaction"
@@ -25,6 +29,29 @@ type Block struct {
 	Bits              uint32
 	Nonce             uint32
 	Transactions      [][]byte
+}
+
+func (b *Block) Hash() []byte {
+	buf := bytes.NewBuffer([]byte{})
+	buf.Grow(192)
+	buf1 := bytes.NewBuffer([]byte{})
+	buf1.Grow(32)
+	binary.Write(buf, binary.LittleEndian, b.PreviousBlockHash)
+	binary.Write(buf, binary.LittleEndian, b.MerkleRootHash)
+	binary.Write(buf, binary.LittleEndian, b.Version)
+	binary.Write(buf, binary.LittleEndian, b.Timestamp)
+	binary.Write(buf, binary.LittleEndian, b.Bits)
+	binary.Write(buf, binary.LittleEndian, b.Nonce)
+	hash := fastsha256.Sum256(buf.Bytes())
+	binary.Write(buf1, binary.BigEndian, hash)
+	hash = fastsha256.Sum256(buf1.Bytes())
+	buf1.Reset()
+	binary.Write(buf1, binary.BigEndian, hash)
+	return buf1.Bytes()
+}
+
+func (b *Block) MarshalJSON() ([]byte, error) {
+	return json.Marshal(hex.EncodeToString(b.Hash()))
 }
 
 func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []trans.T) *Block {
