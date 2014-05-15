@@ -3,6 +3,7 @@ package db
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"os"
 	"testing"
 
@@ -28,6 +29,27 @@ func TestPutGetTransaction(t *testing.T) {
 		t.Errorf("error getting transaction: %v", err)
 	}
 	assert.Equal(t, txn, txn1)
+}
+
+func TestPutGetKey(t *testing.T) {
+	privateKey := generateKey(t)
+	key := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	db, err := NewDB("test.db")
+	defer os.Remove("test.db")
+
+	if err != nil {
+		t.Errorf("error opening database: %v", err)
+	}
+	err = db.PutKey("alias", key)
+	if err != nil {
+		t.Errorf("error putting key: %v", err)
+	}
+	key1 := db.GetKey("alias")
+	if key1 == nil {
+		t.Errorf("error getting key: %v", err)
+	}
+	assert.Equal(t, key, key1)
 }
 
 func generateKey(t *testing.T) *rsa.PrivateKey {
