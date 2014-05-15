@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/hex"
 	"net/http"
@@ -37,7 +38,7 @@ type ImportPrivateKeyReply struct {
 }
 
 func (srv *KeyService) ImportPrivateKey(r *http.Request, args *ImportPrivateKeyArgs, reply *ImportPrivateKeyReply) error {
-	err := env.DB.PutKey(args.Alias, args.PEM)
+	err := env.DB.PutKey(args.Alias, args.PEM, false)
 	if err != nil {
 		reply.Success = false
 		return err
@@ -55,6 +56,46 @@ type ListPrivateKeysReply struct {
 
 func (srv *KeyService) ListPrivateKeys(r *http.Request, args *ListPrivateKeysArgs, reply *ListPrivateKeysReply) error {
 	reply.Aliases = env.DB.ListKeys()
+	return nil
+}
+
+type SetMainKeyArgs struct {
+	Alias string
+}
+
+type SetMainKeyReply struct {
+	Success bool
+}
+
+func (srv *KeyService) SetMainKey(r *http.Request, args *SetMainKeyArgs, reply *SetMainKeyReply) error {
+	key := env.DB.GetKey(args.Alias)
+	if key != nil {
+		err := env.DB.PutKey(args.Alias, key, true)
+		if err != nil {
+			return err
+		}
+		reply.Success = true
+	} else {
+		reply.Success = false
+	}
+	return nil
+}
+
+type GetMainKeyArgs struct {
+}
+
+type GetMainKeyReply struct {
+	Alias string
+}
+
+func (srv *KeyService) GetMainKey(r *http.Request, args *GetMainKeyArgs, reply *GetMainKeyReply) error {
+	keys := env.DB.ListKeys()
+	mainKey := env.DB.GetMainKey()
+	for i := range keys {
+		if bytes.Compare(mainKey, env.DB.GetKey(keys[i])) == 0 {
+			reply.Alias = keys[i]
+		}
+	}
 	return nil
 }
 

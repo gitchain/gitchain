@@ -64,6 +64,23 @@ func main() {
 		} else {
 			fmt.Printf("Server can't import private key %s\n", pemFile)
 		}
+	case "SetMainKey":
+		if len(flag.Args()) < 2 {
+			fmt.Println("Alias required: gitchain SetMainKey <alias>")
+			os.Exit(1)
+		}
+		var alias = flag.Arg(1)
+		var resp api.SetMainKeyReply
+		err := jsonrpc("KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
+		if err != nil {
+			fmt.Printf("Can't set main private key to %s because of %v\n", alias, err)
+			os.Exit(1)
+		}
+		if !resp.Success {
+			fmt.Printf("Can't set main private key to %s (doesn't exist?)\n", alias)
+			os.Exit(1)
+		}
+		fmt.Printf("Successfully set main private key to %s\n", alias)
 
 	case "ListPrivateKeys":
 		var resp api.ListPrivateKeysReply
@@ -72,8 +89,20 @@ func main() {
 			fmt.Printf("Can't list private keys because of %v\n", err)
 			os.Exit(1)
 		}
+		var mainKeyResp api.GetMainKeyReply
+		err = jsonrpc("KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
+		if err != nil {
+			fmt.Printf("Can't discover main private key because of %v\n", err)
+			os.Exit(1)
+		}
 		for i := range resp.Aliases {
-			fmt.Println(resp.Aliases[i])
+			fmt.Printf("%s %s\n", func() string {
+				if resp.Aliases[i] == mainKeyResp.Alias {
+					return "*"
+				} else {
+					return " "
+				}
+			}(), resp.Aliases[i])
 		}
 
 	case "NameReservation":

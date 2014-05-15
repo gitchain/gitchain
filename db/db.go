@@ -3,9 +3,9 @@ package db
 import (
 	"errors"
 
+	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/transaction"
-	"github.com/boltdb/bolt"
 )
 
 type T struct {
@@ -68,7 +68,7 @@ func (db *T) GetTransaction(id []byte) (transaction.T, error) {
 	return decodedTx, nil
 }
 
-func (db *T) PutKey(alias string, key []byte) error {
+func (db *T) PutKey(alias string, key []byte, main bool) error {
 	dbtx, err := db.DB.Begin(true)
 	success := false
 	defer func() {
@@ -89,6 +89,12 @@ func (db *T) PutKey(alias string, key []byte) error {
 	if err != nil {
 		return err
 	}
+	if main {
+		err = bucket.Put([]byte("main"), []byte(alias))
+		if err != nil {
+			return err
+		}
+	}
 	success = true
 	return nil
 }
@@ -104,6 +110,29 @@ func (db *T) GetKey(alias string) []byte {
 		return nil
 	}
 	return bucket.Get([]byte(alias))
+}
+
+func (db *T) GetMainKey() []byte {
+	dbtx, err := db.DB.Begin(false)
+	defer dbtx.Rollback()
+	if err != nil {
+		return nil
+	}
+	bucket := dbtx.Bucket([]byte("keys"))
+	if bucket == nil {
+		return nil
+	}
+	main := bucket.Get([]byte("main"))
+	if main == nil {
+		keys := db.ListKeys()
+		if len(keys) == 0 {
+			return nil
+		} else {
+			return bucket.Get([]byte(keys[0]))
+		}
+	} else {
+		return bucket.Get(main)
+	}
 }
 
 func (db *T) ListKeys() []string {

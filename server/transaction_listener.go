@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"log"
 
 	"github.com/gitchain/gitchain/block"
@@ -26,9 +28,11 @@ func listener() {
 	var msg transaction.T
 	var blk *block.Block
 	blockChannel := make(chan *block.Block)
-	transactionsPool := make([]transaction.T, 0)
+	var transactionsPool []transaction.T
 	var previousBlockHash types.Hash
 
+initPool:
+	transactionsPool = make([]transaction.T, 0)
 loop:
 	select {
 	case msg = <-ch:
@@ -39,6 +43,23 @@ loop:
 		} else {
 			previousBlockHash = types.NewHash(blk.Hash())
 		}
+		key := env.DB.GetMainKey()
+		if key != nil {
+			pemBlock, _ := pem.Decode(key)
+			privateKey, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
+			if err != nil {
+				log.Printf("Error parsing private key")
+			} else {
+				bat, err := transaction.NewBlockAttribution(privateKey)
+				if err != nil {
+					log.Printf("Error creating a BAT")
+				} else {
+					transactionsPool = append(transactionsPool, bat)
+				}
+			}
+		} else {
+			// There is no main key to create a BAT with yet
+		}
 		blk, err := block.NewBlock(previousBlockHash, 0x1e00ffff, transactionsPool)
 		if err != nil {
 			log.Printf("Error while creating a new block: %v", err)
@@ -47,7 +68,7 @@ loop:
 		}
 	case blk = <-blockChannel:
 		env.DB.PutBlock(blk, true)
-		transactionsPool = make([]transaction.T, 0)
+		goto initPool
 	}
 	goto loop
 }

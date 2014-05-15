@@ -43,7 +43,12 @@ func TestPutGetKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("error opening database: %v", err)
 	}
-	err = db.PutKey("alias", key)
+
+	// Before we do anything, try fetching the main key and make sure
+	// there is none
+	assert.Nil(t, db.GetMainKey())
+
+	err = db.PutKey("alias", key, false)
 	if err != nil {
 		t.Errorf("error putting key: %v", err)
 	}
@@ -52,6 +57,62 @@ func TestPutGetKey(t *testing.T) {
 		t.Errorf("error getting key: %v", err)
 	}
 	assert.Equal(t, key, key1)
+
+	// Even though we did specify this key as non-main, it will still be
+	// considered main as the first key
+	key2 := db.GetMainKey()
+	if key2 == nil {
+		t.Errorf("there should be a main key anyway")
+	}
+	assert.Equal(t, key, key2)
+
+	// Try adding another key that goes before (alphabetically)
+	privateKey = generateKey(t)
+	aaronkey := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	err = db.PutKey("aaron", aaronkey, true)
+	key3 := db.GetMainKey()
+	if key3 == nil {
+		t.Errorf("there should be an implicit main key")
+	}
+	assert.Equal(t, aaronkey, key3)
+
+	// Try adding another key that goes after (alphabetically)
+	privateKey = generateKey(t)
+	betakey := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	err = db.PutKey("beta", betakey, true)
+	key31 := db.GetMainKey()
+	if key31 == nil {
+		t.Errorf("there should be an implicit main key")
+	}
+	assert.Equal(t, betakey, key31)
+
+	// This proves that the last added key, in absence of an explicitly
+	// set main key, will be considered main
+
+	// Try adding another key and setting it as a main key explicitly
+	privateKey = generateKey(t)
+	testkey := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	err = db.PutKey("test", testkey, true)
+	key4 := db.GetMainKey()
+	if key4 == nil {
+		t.Errorf("there should be an explicit main key")
+	}
+	assert.Equal(t, testkey, key4)
+
+	// Now, try adding another key!
+	privateKey = generateKey(t)
+	charliekey := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	err = db.PutKey("beta", charliekey, false)
+	key41 := db.GetMainKey()
+	if key41 == nil {
+		t.Errorf("there should be an explicit main key")
+	}
+	assert.Equal(t, testkey, key41)
+
 }
 
 func TestPutGetBlock(t *testing.T) {
