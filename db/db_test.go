@@ -1,20 +1,19 @@
 package db
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
+	"crypto/ecdsa"
 	"os"
 	"testing"
 
 	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPutGetTransaction(t *testing.T) {
-	privateKey := generateKey(t)
+	privateKey := generateECDSAKey(t)
 	txn, _ := transaction.NewNameReservation("my-new-repository", &privateKey.PublicKey)
 	db, err := NewDB("test.db")
 	defer os.Remove("test.db")
@@ -34,8 +33,7 @@ func TestPutGetTransaction(t *testing.T) {
 }
 
 func TestPutGetKey(t *testing.T) {
-	privateKey := generateKey(t)
-	key := x509.MarshalPKCS1PrivateKey(privateKey)
+	key := generateECDSAKey(t)
 
 	db, err := NewDB("test.db")
 	defer os.Remove("test.db")
@@ -46,43 +44,57 @@ func TestPutGetKey(t *testing.T) {
 
 	// Before we do anything, try fetching the main key and make sure
 	// there is none
-	assert.Nil(t, db.GetMainKey())
+	mainKey, err := db.GetMainKey()
+	if err != nil {
+		t.Errorf("error getting main key: %v", err)
+	}
+	assert.Nil(t, mainKey)
 
 	err = db.PutKey("alias", key, false)
 	if err != nil {
 		t.Errorf("error putting key: %v", err)
 	}
-	key1 := db.GetKey("alias")
+	key1, err := db.GetKey("alias")
+	if err != nil {
+		t.Errorf("error putting key: %v", err)
+	}
 	if key1 == nil {
-		t.Errorf("error getting key: %v", err)
+		t.Errorf("no key was retrieved")
 	}
 	assert.Equal(t, key, key1)
 
 	// Even though we did specify this key as non-main, it will still be
 	// considered main as the first key
-	key2 := db.GetMainKey()
+	key2, err := db.GetMainKey()
+	if err != nil {
+		t.Errorf("error getting main key: %v", err)
+	}
 	if key2 == nil {
 		t.Errorf("there should be a main key anyway")
 	}
 	assert.Equal(t, key, key2)
 
 	// Try adding another key that goes before (alphabetically)
-	privateKey = generateKey(t)
-	aaronkey := x509.MarshalPKCS1PrivateKey(privateKey)
+	aaronkey := generateECDSAKey(t)
 
 	err = db.PutKey("aaron", aaronkey, true)
-	key3 := db.GetMainKey()
+	key3, err := db.GetMainKey()
+	if err != nil {
+		t.Errorf("error getting main key: %v", err)
+	}
 	if key3 == nil {
 		t.Errorf("there should be an implicit main key")
 	}
 	assert.Equal(t, aaronkey, key3)
 
 	// Try adding another key that goes after (alphabetically)
-	privateKey = generateKey(t)
-	betakey := x509.MarshalPKCS1PrivateKey(privateKey)
+	betakey := generateECDSAKey(t)
 
 	err = db.PutKey("beta", betakey, true)
-	key31 := db.GetMainKey()
+	key31, err := db.GetMainKey()
+	if err != nil {
+		t.Errorf("error getting main key: %v", err)
+	}
 	if key31 == nil {
 		t.Errorf("there should be an implicit main key")
 	}
@@ -92,22 +104,26 @@ func TestPutGetKey(t *testing.T) {
 	// set main key, will be considered main
 
 	// Try adding another key and setting it as a main key explicitly
-	privateKey = generateKey(t)
-	testkey := x509.MarshalPKCS1PrivateKey(privateKey)
+	testkey := generateECDSAKey(t)
 
 	err = db.PutKey("test", testkey, true)
-	key4 := db.GetMainKey()
+	key4, err := db.GetMainKey()
+	if err != nil {
+		t.Errorf("error getting main key: %v", err)
+	}
 	if key4 == nil {
 		t.Errorf("there should be an explicit main key")
 	}
 	assert.Equal(t, testkey, key4)
 
 	// Now, try adding another key!
-	privateKey = generateKey(t)
-	charliekey := x509.MarshalPKCS1PrivateKey(privateKey)
+	charliekey := generateECDSAKey(t)
 
 	err = db.PutKey("beta", charliekey, false)
-	key41 := db.GetMainKey()
+	key41, err := db.GetMainKey()
+	if err != nil {
+		t.Errorf("error getting main key: %v", err)
+	}
 	if key41 == nil {
 		t.Errorf("there should be an explicit main key")
 	}
@@ -116,7 +132,7 @@ func TestPutGetKey(t *testing.T) {
 }
 
 func TestPutGetBlock(t *testing.T) {
-	privateKey := generateKey(t)
+	privateKey := generateECDSAKey(t)
 	txn1, rand := transaction.NewNameReservation("my-new-repository", &privateKey.PublicKey)
 	txn2, _ := transaction.NewNameAllocation("my-new-repository", rand, privateKey)
 	txn3, _ := transaction.NewNameDeallocation("my-new-repository", privateKey)
@@ -170,8 +186,8 @@ func TestPutGetBlock(t *testing.T) {
 	assert.Equal(t, block, block1)
 }
 
-func generateKey(t *testing.T) *rsa.PrivateKey {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+func generateECDSAKey(t *testing.T) *ecdsa.PrivateKey {
+	privateKey, err := keys.GenerateECDSA()
 	if err != nil {
 		t.Errorf("failed to generate a key")
 	}

@@ -2,11 +2,12 @@
 package transaction
 
 import (
+	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/rsa"
 	"encoding/gob"
 
 	"github.com/conformal/fastsha256"
+	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/types"
 )
 
@@ -21,16 +22,16 @@ const (
 type NameReservation struct {
 	Version   uint32
 	Hashed    types.Hash
-	PublicKey rsa.PublicKey
+	PublicKey []byte
 }
 
-func NewNameReservation(name string, publicKey *rsa.PublicKey) (txn *NameReservation, random []byte) {
+func NewNameReservation(name string, publicKey *ecdsa.PublicKey) (txn *NameReservation, random []byte) {
 	buf := make([]byte, 4)
 	rand.Read(buf)
 	return &NameReservation{
 			Version:   NAME_RESERVATION_VERSION,
 			Hashed:    fastsha256.Sum256(append([]byte(name), buf...)),
-			PublicKey: *publicKey},
+			PublicKey: []byte(keys.ECDSAPublicKeyToString(*publicKey))},
 		buf
 }
 

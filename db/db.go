@@ -1,10 +1,12 @@
 package db
 
 import (
+	"crypto/ecdsa"
 	"errors"
 
 	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/transaction"
 )
 
@@ -68,7 +70,7 @@ func (db *T) GetTransaction(id []byte) (transaction.T, error) {
 	return decodedTx, nil
 }
 
-func (db *T) PutKey(alias string, key []byte, main bool) error {
+func (db *T) PutKey(alias string, key *ecdsa.PrivateKey, main bool) error {
 	dbtx, err := db.DB.Begin(true)
 	success := false
 	defer func() {
@@ -85,7 +87,14 @@ func (db *T) PutKey(alias string, key []byte, main bool) error {
 	if err != nil {
 		return err
 	}
-	err = bucket.Put([]byte(alias), key)
+
+	encodedKey, err := keys.EncodeECDSAPrivateKey(key)
+	if err != nil {
+		return err
+	}
+
+	err = bucket.Put([]byte(alias), encodedKey)
+
 	if err != nil {
 		return err
 	}
@@ -99,39 +108,58 @@ func (db *T) PutKey(alias string, key []byte, main bool) error {
 	return nil
 }
 
-func (db *T) GetKey(alias string) []byte {
+func (db *T) GetKey(alias string) (*ecdsa.PrivateKey, error) {
 	dbtx, err := db.DB.Begin(false)
 	defer dbtx.Rollback()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	bucket := dbtx.Bucket([]byte("keys"))
 	if bucket == nil {
-		return nil
+		return nil, nil // return no error because there were no keys saved
 	}
-	return bucket.Get([]byte(alias))
+	key := bucket.Get([]byte(alias))
+	if key == nil {
+		return nil, nil
+	} else {
+		decodedKey, err := keys.DecodeECDSAPrivateKey(key)
+		if err != nil {
+			return nil, err
+		}
+		return decodedKey, nil
+	}
 }
 
-func (db *T) GetMainKey() []byte {
+func (db *T) GetMainKey() (*ecdsa.PrivateKey, error) {
 	dbtx, err := db.DB.Begin(false)
 	defer dbtx.Rollback()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	bucket := dbtx.Bucket([]byte("keys"))
 	if bucket == nil {
-		return nil
+		return nil, nil // return no error because there were no keys saved
 	}
 	main := bucket.Get([]byte("main"))
+	var key []byte
 	if main == nil {
 		keys := db.ListKeys()
 		if len(keys) == 0 {
-			return nil
+			return nil, nil
 		} else {
-			return bucket.Get([]byte(keys[0]))
+			key = bucket.Get([]byte(keys[0]))
 		}
 	} else {
-		return bucket.Get(main)
+		key = bucket.Get(main)
+	}
+	if key == nil {
+		return nil, nil
+	} else {
+		decodedKey, err := keys.DecodeECDSAPrivateKey(key)
+		if err != nil {
+			return nil, err
+		}
+		return decodedKey, nil
 	}
 }
 

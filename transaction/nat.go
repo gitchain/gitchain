@@ -3,12 +3,12 @@ package transaction
 
 import (
 	"bytes"
-	"crypto"
+	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/gob"
+	"math/big"
 )
 
 func init() {
@@ -20,29 +20,34 @@ const (
 )
 
 type NameAllocation struct {
-	Version   uint32
-	Name      string
-	Rand      []byte
-	Signature []byte
+	Version    uint32
+	Name       string
+	Rand       []byte
+	SignatureR []byte
+	SignatureS []byte
 }
 
-func NewNameAllocation(name string, random []byte, privateKey *rsa.PrivateKey) (txn *NameAllocation, err error) {
+func NewNameAllocation(name string, random []byte, privateKey *ecdsa.PrivateKey) (txn *NameAllocation, err error) {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.LittleEndian, sha1.Sum(append([]byte("ALLOCATE"), name...)))
-	sig, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA1, buf.Bytes())
+	sigR, sigS, err := ecdsa.Sign(rand.Reader, privateKey, buf.Bytes())
 	return &NameAllocation{
-			Version:   NAME_ALLOCATION_VERSION,
-			Name:      name,
-			Rand:      random,
-			Signature: sig},
+			Version:    NAME_ALLOCATION_VERSION,
+			Name:       name,
+			Rand:       random,
+			SignatureR: sigR.Bytes(),
+			SignatureS: sigS.Bytes()},
 		err
 }
 
-func (txn *NameAllocation) Verify(publicKey *rsa.PublicKey) bool {
+func (txn *NameAllocation) Verify(publicKey *ecdsa.PublicKey) bool {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.LittleEndian, sha1.Sum(append([]byte("ALLOCATE"), txn.Name...)))
-	err := rsa.VerifyPKCS1v15(publicKey, crypto.SHA1, buf.Bytes(), txn.Signature)
-	return err == nil
+	r := new(big.Int)
+	s := new(big.Int)
+	r.SetBytes(txn.SignatureR)
+	s.SetBytes(txn.SignatureS)
+	return ecdsa.Verify(publicKey, buf.Bytes(), r, s)
 }
 
 func (txn *NameAllocation) Encode() ([]byte, error) {

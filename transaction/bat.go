@@ -3,12 +3,12 @@ package transaction
 
 import (
 	"bytes"
-	"crypto"
+	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/gob"
+	"math/big"
 )
 
 func init() {
@@ -22,25 +22,30 @@ const (
 )
 
 type BlockAttribution struct {
-	Version   uint32
-	Signature []byte
+	Version    uint32
+	SignatureR []byte
+	SignatureS []byte
 }
 
-func NewBlockAttribution(privateKey *rsa.PrivateKey) (txn *BlockAttribution, err error) {
+func NewBlockAttribution(privateKey *ecdsa.PrivateKey) (txn *BlockAttribution, err error) {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.LittleEndian, sha1.Sum([]byte("ATTRIBUTE")))
-	sig, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA1, buf.Bytes())
+	sigR, sigS, err := ecdsa.Sign(rand.Reader, privateKey, buf.Bytes())
 	return &BlockAttribution{
-			Version:   NAME_ALLOCATION_VERSION,
-			Signature: sig},
+			Version:    NAME_ALLOCATION_VERSION,
+			SignatureR: sigR.Bytes(),
+			SignatureS: sigS.Bytes()},
 		err
 }
 
-func (txn *BlockAttribution) Verify(publicKey *rsa.PublicKey) bool {
+func (txn *BlockAttribution) Verify(publicKey *ecdsa.PublicKey) bool {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.LittleEndian, sha1.Sum([]byte("ATTRIBUTE")))
-	err := rsa.VerifyPKCS1v15(publicKey, crypto.SHA1, buf.Bytes(), txn.Signature)
-	return err == nil
+	r := new(big.Int)
+	s := new(big.Int)
+	r.SetBytes(txn.SignatureR)
+	s.SetBytes(txn.SignatureS)
+	return ecdsa.Verify(publicKey, buf.Bytes(), r, s)
 }
 
 func (txn *BlockAttribution) Encode() ([]byte, error) {

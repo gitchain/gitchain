@@ -2,8 +2,6 @@ package server
 
 import (
 	"bytes"
-	"crypto/x509"
-	"encoding/pem"
 	"log"
 
 	"github.com/gitchain/gitchain/block"
@@ -44,19 +42,16 @@ loop:
 		} else {
 			previousBlockHash = types.NewHash(blk.Hash())
 		}
-		key := env.DB.GetMainKey()
+		key, err := env.DB.GetMainKey()
+		if err != nil {
+			log.Printf("Error while attempting to retrieve main key: %v", err)
+		}
 		if key != nil {
-			pemBlock, _ := pem.Decode(key)
-			privateKey, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
+			bat, err := transaction.NewBlockAttribution(key)
 			if err != nil {
-				log.Printf("Error parsing private key")
+				log.Printf("Error creating a BAT")
 			} else {
-				bat, err := transaction.NewBlockAttribution(privateKey)
-				if err != nil {
-					log.Printf("Error creating a BAT")
-				} else {
-					transactionsPool = append(transactionsPool, bat)
-				}
+				transactionsPool = append(transactionsPool, bat)
 			}
 		} else {
 			// There is no main key to create a BAT with yet

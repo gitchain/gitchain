@@ -1,10 +1,10 @@
 package transaction
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
+	"crypto/ecdsa"
 	"testing"
 
+	"github.com/gitchain/gitchain/keys"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,7 +77,7 @@ func TestNewAttribution(t *testing.T) {
 	}
 
 	assert.True(t, txn.Verify(&privateKey.PublicKey))
-	txn.Signature = []byte("boom")
+	txn.SignatureR = []byte("boom")
 	assert.False(t, txn.Verify(&privateKey.PublicKey))
 
 }
@@ -103,8 +103,8 @@ func testTransactionEncodingDecoding(t *testing.T, txn T) {
 	assert.Equal(t, txn1, txn, "encoded and decoded transaction should be identical to the original one")
 }
 
-func generateKey(t *testing.T) *rsa.PrivateKey {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+func generateKey(t *testing.T) *ecdsa.PrivateKey {
+	privateKey, err := keys.GenerateECDSA()
 	if err != nil {
 		t.Errorf("failed to generate a key")
 	}

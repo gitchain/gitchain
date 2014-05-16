@@ -1,10 +1,10 @@
 package block
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
+	"crypto/ecdsa"
 	"testing"
 
+	"github.com/gitchain/gitchain/keys"
 	trans "github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 	"github.com/stretchr/testify/assert"
@@ -64,6 +64,7 @@ func TestEncodeDecode(t *testing.T) {
 	if err != nil {
 		t.Errorf("error while encoding block: %v", err)
 	}
+
 	assert.Equal(t, block, block1, "encoded and decoded block should be identical to the original one")
 }
 
@@ -73,8 +74,8 @@ func TestTargetFromBits(t *testing.T) {
 	assert.Equal(t, append(make([]byte, 32-len(b)), b...), []byte{0, 0, 0, 0, 0, 4, 4, 203, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
-func generateKey(t *testing.T) *rsa.PrivateKey {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+func generateKey(t *testing.T) *ecdsa.PrivateKey {
+	privateKey, err := keys.GenerateECDSA()
 	if err != nil {
 		t.Errorf("failed to generate a key")
 	}

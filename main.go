@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/pem"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/gitchain/gitchain/api"
 	"github.com/gitchain/gitchain/env"
-	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/server"
 
 	"github.com/gorilla/rpc/json"
@@ -37,34 +35,24 @@ func jsonrpc(method string, req, res interface{}) error {
 func main() {
 	flag.Parse()
 	switch flag.Arg(0) {
-	case "ImportPrivateKey":
-		if len(flag.Args()) < 3 {
-			fmt.Println("PEM file and alias required: gitchain ImportPrivateKey <file.pem> <alias>")
+	case "GeneratePrivateKey":
+		if len(flag.Args()) < 2 {
+			fmt.Println("PEM file and alias required: gitchain GeneratePrivateKey <alias>")
 			os.Exit(1)
 		}
-		var pemFile = flag.Arg(1)
-		var alias = flag.Arg(2)
+		var alias = flag.Arg(1)
 
-		content, err := ioutil.ReadFile(pemFile)
+		var resp api.GeneratePrivateKeyReply
+		err := jsonrpc("KeyService.GeneratePrivateKey", &api.GeneratePrivateKeyArgs{Alias: alias}, &resp)
 		if err != nil {
-			fmt.Printf("Can't read %s because of %v\n", pemFile, err)
-			os.Exit(1)
-		}
-		key, err := keys.ReadPEM(content, true)
-		if err != nil {
-			fmt.Printf("Can't decode %s because of %v\n", pemFile, err)
-			os.Exit(1)
-		}
-		var resp api.ImportPrivateKeyReply
-		err = jsonrpc("KeyService.ImportPrivateKey", &api.ImportPrivateKeyArgs{Alias: alias, PEM: pem.EncodeToMemory(key)}, &resp)
-		if err != nil {
-			fmt.Printf("Can't import private key %s because of %v\n", pemFile, err)
+			fmt.Printf("Can't generate private key because of %v\n", err)
 			os.Exit(1)
 		}
 		if resp.Success {
-			fmt.Printf("Private key %s has been successfully imported with an alias of %s\n", pemFile, alias)
+			fmt.Printf("Private key has been successfully generated with an alias of %s, the public address is %s\n", alias, resp.PublicKey)
 		} else {
-			fmt.Printf("Server can't import private key %s\n", pemFile)
+			fmt.Printf("Server can't generate the private key\n")
+			os.Exit(1)
 		}
 	case "SetMainKey":
 		if len(flag.Args()) < 2 {
