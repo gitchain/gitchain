@@ -68,7 +68,7 @@ loop:
 			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
 	case blk = <-blockChannel:
-		if blk, _ = env.DB.GetLastBlock(); blk == nil {
+		if lastBlk, _ := env.DB.GetLastBlock(); lastBlk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
 			previousBlockHash = types.NewHash(blk.Hash())
