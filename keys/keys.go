@@ -3,13 +3,13 @@ package keys
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/gob"
 	"math/big"
 
 	"code.google.com/p/go.crypto/ripemd160"
 
+	"github.com/conformal/btcec"
 	"github.com/conformal/fastsha256"
 	"github.com/tv42/base58"
 )
@@ -21,9 +21,9 @@ import (
 //  http://infosecurity.ch/20100926/not-every-elliptic-curve-is-the-same-trough-on-ecc-security/
 //  http://www.hyperelliptic.org/tanja/vortraege/20130531.pdf
 //
-// But for now I decided to stick to one of the "defaults"
+// For now I decided to stick to one used in Bitcoin (secp256k1)
 func GenerateECDSA() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	return ecdsa.GenerateKey(btcec.S256(), rand.Reader)
 }
 
 func EncodeECDSAPrivateKey(key *ecdsa.PrivateKey) ([]byte, error) {
@@ -45,7 +45,7 @@ func DecodeECDSAPrivateKey(b []byte) (*ecdsa.PrivateKey, error) {
 		return nil, err
 	}
 	privateKey := new(ecdsa.PrivateKey)
-	privateKey.PublicKey.Curve = elliptic.P256()
+	privateKey.PublicKey.Curve = btcec.S256()
 	privateKey.PublicKey.X = &p[0]
 	privateKey.PublicKey.Y = &p[1]
 	privateKey.D = &p[2]
