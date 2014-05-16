@@ -42,6 +42,10 @@ General architecture of Gitchain is inspired by Bitcoin and Namecoin. Gitchain m
 
 In addition to the blockchain, Gitchain uses a DHT technique to store Git objects in a distributed manner.
 
+\section{Public Key Cryptography}
+
+Gitchain is using elliptic public key cryptography to implement signing and verification, using P-256 curve \todo{This is not a final decision. There's a lot of interesting materials available on this subject: \cite{safecurves} \cite{trough} \cite{nistcurvesdangers}}.
+
 \section{Transaction}
 
 Every transaction on the Gitchain blockchain had a unique SHA256 hash and is therefore addressable by its own hash. In this paper, transactions are typically represented with its name and record-like structure:
@@ -130,6 +134,21 @@ Upon name allocation, the holder of the private key used to allocate the name is
 \bibitem{rfc1738}
   \emph{Uniform Resource Locators (URL)}.
   \url{http://www.ietf.org/rfc/rfc1738.txt}
+
+\bibitem{safecurves}
+  Daniel J. Bernstein, Tanja Lange,
+  \emph{SafeCurves: choosing safe curves for elliptic-curve cryptography}
+  \url{http://safecurves.cr.yp.to/}
+
+\bibitem{trough}
+  Fabio Pietrosanti,
+  \emph{Not every elliptic curve is the same: trough on ECC security}
+  \url{http://infosecurity.ch/20100926/not-every-elliptic-curve-is-the-same-trough-on-ecc-security/}
+
+\bibitem{nistcurvesdangers}
+  Daniel J. Bernstein, Tanja Lange,
+  \emph{Security dangers of the NIST curves}
+  \url{http://www.hyperelliptic.org/tanja/vortraege/20130531.pdf}
 
 \end{thebibliography}
 
