@@ -144,6 +144,21 @@ func main() {
 		fmt.Printf("Previous block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %#x\nNonce: %v\nTransactions: %d\n",
 			hex.EncodeToString(resp.PreviousBlockHash[:]), hex.EncodeToString(resp.MerkleRootHash[:]),
 			time.Unix(resp.Timestamp, 0).String(), resp.Bits, resp.Nonce, resp.NumTransactions)
+	case "Transactions":
+		if len(flag.Args()) < 2 {
+			fmt.Println("Command format required: gitchain Transactions <block hash>")
+			os.Exit(1)
+		}
+		hash := flag.Arg(1)
+		var resp api.BlockTransactionsReply
+		err := jsonrpc("BlockService.BlockTransactions", &api.BlockTransactionsArgs{Hash: hash}, &resp)
+		if err != nil {
+			fmt.Printf("Can't get a list of block transactions because of %v\n", err)
+			os.Exit(1)
+		}
+		for i := range resp.Transactions {
+			fmt.Println(resp.Transactions[i])
+		}
 	case "Info":
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", env.Port))
 		if err != nil {

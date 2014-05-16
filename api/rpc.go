@@ -177,3 +177,26 @@ func (srv *BlockService) GetBlock(r *http.Request, args *GetBlockArgs, reply *Ge
 	reply.NumTransactions = len(block.Transactions)
 	return nil
 }
+
+type BlockTransactionsArgs struct {
+	Hash string
+}
+
+type BlockTransactionsReply struct {
+	Transactions []string
+}
+
+func (srv *BlockService) BlockTransactions(r *http.Request, args *BlockTransactionsArgs, reply *BlockTransactionsReply) error {
+	hash, err := hex.DecodeString(args.Hash)
+	if err != nil {
+		return err
+	}
+	block, err := env.DB.GetBlock(hash)
+	if err != nil {
+		return err
+	}
+	for i := range block.Transactions {
+		reply.Transactions = append(reply.Transactions, hex.EncodeToString(block.Transactions[i].Hash()))
+	}
+	return nil
+}
