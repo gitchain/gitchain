@@ -1,0 +1,47 @@
+{
+	"ImportPath": "github.com/gitchain/gitchain",
+	"GoVersion": "go1.2.2",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go.crypto/ripemd160",
+			"Comment": "null-209",
+			"Rev": "23b39e4e860172e1983ded00a9d2f7e42b7683d0"
+		},
+		{
+			"ImportPath": "github.com/boltdb/bolt",
+			"Comment": "data/v1-88-g417b0b7",
+			"Rev": "417b0b7bf69569597e126fcf920176942dcf427a"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/inject",
+			"Comment": "v1.0-rc1",
+			"Rev": "37d7f8432a3e684eef9b2edece76bdfa6ac85b39"
+		},
+		{
+			"ImportPath": "github.com/conformal/btcec",
+			"Comment": "BTCEC_0_2_1-3-ge841a2e",
+			"Rev": "e841a2e999b7e9ebd13fb2b2aba4bd327be03708"
+		},
+		{
+			"ImportPath": "github.com/conformal/fastsha256",
+			"Rev": "ce4c212c9d0d73ea7074795f8694f49b82152b18"
+		},
+		{
+			"ImportPath": "github.com/go-martini/martini",
+			"Comment": "v1.0-rc1-28-g234dc6b",
+			"Rev": "234dc6b858add8eb6ca1f143545f2d643515f70b"
+		},
+		{
+			"ImportPath": "github.com/gorilla/rpc",
+			"Rev": "5aafac3c0ea7bad725a9f1a546f17091aa61151f"
+		},
+		{
+			"ImportPath": "github.com/tv42/base58",
+			"Rev": "9d8d9aec618d081c2605406bf8a2fd0528ae59d6"
+		},
+		{
+			"ImportPath": "github.com/xsleonard/go-merkle",
+			"Rev": "8f5dbecec9069f7d2fe7872373dfc337d94ed8fb"
+		}
+	]
+}
