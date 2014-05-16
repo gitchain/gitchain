@@ -59,7 +59,7 @@ In order to maintain the blockchain, Gitchain nodes mine blocks, similarly to Bi
 While a block can be mined without attribution, it is generally recommended that a miner includes the following transaction into every block it mines. It can be later used as a proof of work record to be redeemed in other transactions.
 
 \begin{verbatim}
-BlockAttribution{Signature: RSASignature(
+BlockAttribution{Signature{R,S}: ECDSASignature(
                   Concat(ATTRIBUTE, previousBlockHash),
                   privateKey)}
 \end{verbatim}
@@ -95,7 +95,7 @@ After the corresponding NRT has matured, a name allocation can happen:
 
 \begin{verbatim}
 NameAllocation(Name: name, Rand: rand,
-               Signature: RSAsignature(Concat(ALLOCATE, name),
+               Signature{R,S}: ECDSAsignature(Concat(ALLOCATE, name),
                           privateKey))
 \end{verbatim}
 
@@ -107,7 +107,7 @@ After the NAT has matured, one can deallocate the corresponding name.
 
 \begin{verbatim}
 NameDeallocation(Name: name,
-                 Signature: RSAsignature(Concat(DEALLOCATE,name),
+                 Signature{R,S}: ECDSAsignature(Concat(DEALLOCATE,name),
                                          privateKey))
 \end{verbatim}
 
