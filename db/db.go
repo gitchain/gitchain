@@ -3,7 +3,6 @@ package db
 import (
 	"crypto/ecdsa"
 	"errors"
-	"fmt"
 
 	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/block"
@@ -261,28 +260,6 @@ func (db *T) GetLastBlock() (*block.Block, error) {
 	if b == nil {
 		return nil, errors.New("block not found")
 	}
-	decodedBlock, err := block.Decode(b)
-	if err != nil {
-		return decodedBlock, err
-	}
-	return decodedBlock, nil
-}
-
-func (db *T) GetTransactionBlock(hash []byte) (*block.Block, error) {
-	dbtx, err := db.DB.Begin(false)
-	defer dbtx.Rollback()
-	if err != nil {
-		return nil, err
-	}
-	bucket := dbtx.Bucket([]byte("blocks"))
-	if bucket == nil {
-		return nil, nil
-	}
-	blockHash := bucket.Get(hash)
-	if blockHash == nil {
-		return nil, errors.New(fmt.Sprintf("referenced block %v not found", blockHash))
-	}
-	b := bucket.Get(blockHash)
 	decodedBlock, err := block.Decode(b)
 	if err != nil {
 		return decodedBlock, err

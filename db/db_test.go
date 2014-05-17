@@ -12,6 +12,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func fixtureSampleTransactions(t *testing.T) []transaction.T {
+	privateKey := generateECDSAKey(t)
+	txn1, rand := transaction.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn2, _ := transaction.NewNameAllocation("my-new-repository", rand, privateKey)
+	txn3, _ := transaction.NewNameDeallocation("my-new-repository", privateKey)
+
+	return []transaction.T{txn1, txn2, txn3}
+}
+
 func TestPutGetTransaction(t *testing.T) {
 	privateKey := generateECDSAKey(t)
 	txn, _ := transaction.NewNameReservation("my-new-repository", &privateKey.PublicKey)
@@ -161,15 +170,6 @@ func TestPutGetBlock(t *testing.T) {
 		t.Errorf("error getting block %v", block.Hash())
 	}
 	assert.Equal(t, block, block1)
-
-	// Block<->transaction indexing
-	for i := range transactions {
-		block1, err = db.GetTransactionBlock(transactions[i].Hash())
-		if err != nil {
-			t.Errorf("error getting transaction's block: %v", err)
-		}
-		assert.Equal(t, block, block1)
-	}
 
 	// Attempt fetching the last one
 	block1, err = db.GetLastBlock()
