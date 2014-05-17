@@ -10,7 +10,7 @@ import (
 	"code.google.com/p/go.crypto/ripemd160"
 
 	"github.com/conformal/btcec"
-	"github.com/conformal/fastsha256"
+	"github.com/gitchain/gitchain/util"
 	"github.com/tv42/base58"
 )
 
@@ -55,10 +55,10 @@ func DecodeECDSAPrivateKey(b []byte) (*ecdsa.PrivateKey, error) {
 func ECDSAPublicKeyToString(key ecdsa.PublicKey) string {
 	x := key.X.Bytes()
 	y := key.Y.Bytes()
-	sha := fastsha256.Sum256(append(append([]byte{0x04}, x...), y...)) // should it be 0x04?
-	ripe := ripemd160.New().Sum(sha[:])
-	ripesha := fastsha256.Sum256(ripe)
-	ripedoublesha := fastsha256.Sum256(ripesha[:])
+	sha := util.SHA256(append(append([]byte{0x04}, x...), y...)) // should it be 0x04?
+	ripe := ripemd160.New().Sum(sha)
+	ripesha := util.SHA256(ripe)
+	ripedoublesha := util.SHA256(ripesha)
 	head := ripedoublesha[0:3]
 	final := append(ripe, head...)
 	i := new(big.Int)

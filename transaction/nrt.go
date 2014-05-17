@@ -6,9 +6,9 @@ import (
 	"crypto/rand"
 	"encoding/gob"
 
-	"github.com/conformal/fastsha256"
 	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/types"
+	"github.com/gitchain/gitchain/util"
 )
 
 func init() {
@@ -30,7 +30,7 @@ func NewNameReservation(name string, publicKey *ecdsa.PublicKey) (txn *NameReser
 	rand.Read(buf)
 	return &NameReservation{
 			Version:   NAME_RESERVATION_VERSION,
-			Hashed:    fastsha256.Sum256(append([]byte(name), buf...)),
+			Hashed:    util.SHA256(append([]byte(name), buf...)),
 			PublicKey: []byte(keys.ECDSAPublicKeyToString(*publicKey))},
 		buf
 }

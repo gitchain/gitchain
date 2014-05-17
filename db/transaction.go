@@ -42,16 +42,16 @@ func (db *T) GetTransactionConfirmations(hash []byte) (int, error) {
 	}
 	for last != nil {
 		path += 1
-		if bytes.Compare(last.Hash()[:], blk.Hash()[:]) == 0 {
+		if bytes.Compare(last.Hash(), blk.Hash()) == 0 {
 			break
 		}
-		last, err = db.GetBlock(last.PreviousBlockHash[:])
+		last, err = db.GetBlock(last.PreviousBlockHash)
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	if path != 0 && bytes.Compare(last.Hash()[:], blk.Hash()[:]) == 0 {
+	if path != 0 && bytes.Compare(last.Hash(), blk.Hash()) == 0 {
 		return path, nil
 	} else {
 		return 0, nil

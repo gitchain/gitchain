@@ -82,7 +82,7 @@ loop:
 		} else {
 			previousBlockHash = types.NewHash(blk.Hash())
 		}
-		isLastBlock := bytes.Compare(blk.PreviousBlockHash[:], previousBlockHash[:]) == 0
+		isLastBlock := bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0
 		env.DB.PutBlock(blk, isLastBlock)
 		goto initPool
 	default:

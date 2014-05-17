@@ -117,5 +117,5 @@ func merkleRoot(data [][]byte) (types.Hash, error) {
 	if err != nil {
 		return types.EmptyHash(), err
 	}
-	return types.NewHash(tree.Root().Hash), err
+	return tree.Root().Hash, err
 }

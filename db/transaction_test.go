@@ -74,7 +74,7 @@ func TestTransactionConfirmations(t *testing.T) {
 
 	anotherSampleOfTransactions := fixtureSampleTransactions(t)
 
-	blk, err = block.NewBlock(types.NewHash(blk.Hash()), block.HIGHEST_TARGET, anotherSampleOfTransactions)
+	blk, err = block.NewBlock(blk.Hash(), block.HIGHEST_TARGET, anotherSampleOfTransactions)
 	err = db.PutBlock(blk, true)
 	if err != nil {
 		t.Errorf("error putting block: %v", err)
