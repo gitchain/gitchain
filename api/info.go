@@ -15,7 +15,7 @@ type Info struct {
 	LastBlock *block.Block
 }
 
-func info(resp http.ResponseWriter) string {
+func info(resp http.ResponseWriter, req *http.Request) {
 	lastBlock, err := env.DB.GetLastBlock()
 	if err != nil {
 		log.Printf("Error while serving /info: %v", err)
@@ -25,5 +25,5 @@ func info(resp http.ResponseWriter) string {
 		log.Printf("Error while serving /info: %v", err)
 	}
 	resp.Header().Add("Content-Type", "application/json")
-	return string(json)
+	resp.Write(json)
 }

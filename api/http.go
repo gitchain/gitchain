@@ -7,41 +7,40 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/env"
-
-	"github.com/go-martini/martini"
+	"github.com/gorilla/mux"
 )
 
 func Start() {
 
-	r := martini.NewRouter()
-	m := martini.New()
-	m.Use(martini.Logger())
-	m.Use(martini.Recovery())
-	m.MapTo(r, (*martini.Routes)(nil))
-	m.Action(r.Handle)
+	r := mux.NewRouter()
+
 	// Gitchain API
-	r.Post("/rpc", jsonRpcService().ServeHTTP)
-	r.Get("/info", info)
+	r.Methods("POST").Path("/rpc").HandlerFunc(jsonRpcService().ServeHTTP)
+	r.Methods("GET").Path("/info").HandlerFunc(info)
 
 	// Git Server
-	r.Post("^(?P<path>.*)/git-upload-pack$", func(params martini.Params, req *http.Request) string {
+	r.Methods("POST").Path("/{path}/git-upload-pack").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		body, _ := ioutil.ReadAll(req.Body)
 		fmt.Println(req, body)
-		return params["path"]
+		resp.Write([]byte(mux.Vars(req)["path"]))
 	})
 
-	r.Post("^(?P<path>.*)/git-receive-pack$", func(params martini.Params, req *http.Request) string {
+	r.Methods("POST").Path("/{path}/git-receive-pack").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		fmt.Println(req)
-		return params["path"]
+		resp.Write([]byte(mux.Vars(req)["path"]))
 	})
 
-	r.Get("^(?P<path>.*)/info/refs$", func(params martini.Params, req *http.Request) (int, string) {
+	r.Methods("GET").Path("/{path}/info/refs").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		body, _ := ioutil.ReadAll(req.Body)
 		fmt.Println(req, body)
 
-		return 404, params["path"]
+		resp.Write([]byte(mux.Vars(req)["path"]))
 	})
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", env.Port), m))
+	http.Handle("/", r)
 
+	err := http.ListenAndServe(fmt.Sprintf(":%d", env.Port), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
