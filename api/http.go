@@ -39,7 +39,7 @@ func Start() {
 
 	http.Handle("/", r)
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", env.Port), nil)
+	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", env.Port), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
