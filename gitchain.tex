@@ -33,7 +33,9 @@ In order to make the problem simpler, this paper splits it into a few distinct p
 
 \section{General Architecture}
 
-General architecture of Gitchain is inspired by Bitcoin and Namecoin. Gitchain maintains its own \emph{blockchain}. However, there are some notable differences:
+Gitchain is built around a couple of concepts, and is largerly inspired by Bitcoin and Namecoin.
+
+Gitchain maintains its own \emph{blockchain}. However, there are some notable differences:
 
 \begin{itemize}
 \item \emph{No scripting language}. Instead, different transaction types are used. This simplifies its implementation and helps addressing the transaction malleability \cite{txnmal} issue.
@@ -49,7 +51,7 @@ Bitcoin.
 
 \section{Transaction}
 
-Every transaction on the Gitchain blockchain had a unique SHA256 hash and is therefore addressable by its own hash. In this paper, transactions are typically represented with its name and record-like structure:
+Every transaction on the Gitchain blockchain has a unique SHA256 hash and is therefore addressable by its own hash. In this paper, transactions are typically represented with its name and record-like structure:
 
 \begin{verbatim}
 SampleTransaction{Value: ...}
