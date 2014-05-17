@@ -45,7 +45,7 @@ func GetMiningStatus() MiningStatus {
 	return <-response
 }
 
-func StartMiningFactory() {
+func MiningFactory() {
 	var status MiningStatus
 	status.Miners = make(map[*block.Block]Miner)
 	status.BlocksMined = 0

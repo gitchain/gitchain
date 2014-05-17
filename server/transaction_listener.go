@@ -6,22 +6,10 @@ import (
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/env"
+	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 )
-
-var ch chan transaction.T
-
-func StartTransactionListener() {
-	ch = make(chan transaction.T)
-	go listener()
-}
-
-func BroadcastTransaction(tx transaction.T) {
-	go func() {
-		ch <- tx
-	}()
-}
 
 func prepareBAT() transaction.T {
 	key, err := env.DB.GetMainKey()
@@ -44,12 +32,14 @@ func targetBits() uint32 {
 	return 0x1e00ffff
 }
 
-func listener() {
+func TransactionListener() {
 	var msg transaction.T
 	var blk *block.Block
 	blockChannel := make(chan *block.Block)
 	var transactionsPool []transaction.T
 	var previousBlockHash types.Hash
+	var ch chan transaction.T = make(chan transaction.T)
+	router.PermanentSubscribe("/transaction", ch)
 
 	miningEmpty := false
 

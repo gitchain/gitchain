@@ -178,8 +178,8 @@ func main() {
 	case "Serve":
 		fallthrough
 	default:
-		go server.StartMiningFactory()
-		server.StartTransactionListener()
+		go server.MiningFactory()
+		go server.TransactionListener()
 		api.Start()
 	}
 

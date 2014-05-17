@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/env"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 )
 
@@ -33,7 +33,7 @@ func (srv *NameService) NameReservation(r *http.Request, args *NameReservationAr
 	tx, random := transaction.NewNameReservation(args.Name, &key.PublicKey)
 	reply.Id = hex.EncodeToString(tx.Hash())
 	reply.Random = hex.EncodeToString(random)
-	server.BroadcastTransaction(tx)
+	router.Send("/transaction", make(chan transaction.T), tx)
 	return nil
 }
 
@@ -65,6 +65,6 @@ func (srv *NameService) NameAllocation(r *http.Request, args *NameAllocationArgs
 	}
 
 	reply.Id = hex.EncodeToString(tx.Hash())
-	server.BroadcastTransaction(tx)
+	router.Send("/transaction", make(chan transaction.T), tx)
 	return nil
 }
