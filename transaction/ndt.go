@@ -38,6 +38,10 @@ func NewNameDeallocation(name string, privateKey *ecdsa.PrivateKey) (txn *NameDe
 		err
 }
 
+func (txn *NameDeallocation) Valid() bool {
+	return (txn.Version == NAME_ALLOCATION_VERSION && len(txn.Name) > 0)
+}
+
 func (txn *NameDeallocation) Verify(publicKey *ecdsa.PublicKey) bool {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.LittleEndian, sha1.Sum(append([]byte("DEALLOCATE"), txn.Name...)))

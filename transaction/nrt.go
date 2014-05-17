@@ -35,6 +35,10 @@ func NewNameReservation(name string, publicKey *ecdsa.PublicKey) (txn *NameReser
 		buf
 }
 
+func (txn *NameReservation) Valid() bool {
+	return (txn.Version == NAME_RESERVATION_VERSION && len(txn.Hashed) == 32)
+}
+
 func (txn *NameReservation) Encode() ([]byte, error) {
 	return encode(txn)
 }

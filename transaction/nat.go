@@ -40,6 +40,10 @@ func NewNameAllocation(name string, random []byte, privateKey *ecdsa.PrivateKey)
 		err
 }
 
+func (txn *NameAllocation) Valid() bool {
+	return (txn.Version == NAME_ALLOCATION_VERSION && len(txn.Name) > 0 && len(txn.Rand) == 4)
+}
+
 func (txn *NameAllocation) Verify(publicKey *ecdsa.PublicKey) bool {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.LittleEndian, sha1.Sum(append([]byte("ALLOCATE"), txn.Name...)))

@@ -32,10 +32,14 @@ func NewBlockAttribution(privateKey *ecdsa.PrivateKey) (txn *BlockAttribution, e
 	binary.Write(buf, binary.LittleEndian, sha1.Sum([]byte("ATTRIBUTE")))
 	sigR, sigS, err := ecdsa.Sign(rand.Reader, privateKey, buf.Bytes())
 	return &BlockAttribution{
-			Version:    NAME_ALLOCATION_VERSION,
+			Version:    BLOCK_ATTRIBUTION_VERSION,
 			SignatureR: sigR.Bytes(),
 			SignatureS: sigS.Bytes()},
 		err
+}
+
+func (txn *BlockAttribution) Valid() bool {
+	return (txn.Version == BLOCK_ATTRIBUTION_VERSION)
 }
 
 func (txn *BlockAttribution) Verify(publicKey *ecdsa.PublicKey) bool {

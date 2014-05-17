@@ -13,6 +13,7 @@ import (
 type T interface {
 	Encode() ([]byte, error)
 	Hash() []byte
+	Valid() bool
 }
 
 func hash(t T) []byte {
