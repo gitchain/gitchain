@@ -162,6 +162,15 @@ func TestPutGetBlock(t *testing.T) {
 	}
 	assert.Equal(t, block, block1)
 
+	// Block<->transaction indexing
+	for i := range transactions {
+		block1, err = db.GetTransactionBlock(transactions[i].Hash())
+		if err != nil {
+			t.Errorf("error getting transaction's block: %v", err)
+		}
+		assert.Equal(t, block, block1)
+	}
+
 	// Attempt fetching the last one
 	block1, err = db.GetLastBlock()
 	if err != nil {
