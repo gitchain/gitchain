@@ -49,7 +49,7 @@ loop:
 		if key != nil {
 			bat, err := transaction.NewBlockAttribution(key)
 			if err != nil {
-				log.Printf("Error creating a BAT")
+				log.Printf("Error while creating a BAT: %v", err)
 			} else {
 				transactionsPool = append(transactionsPool, bat)
 			}
