@@ -64,7 +64,7 @@ loop:
 		if blk, _ = env.DB.GetLastBlock(); blk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
-			previousBlockHash = types.NewHash(blk.Hash())
+			previousBlockHash = blk.Hash()
 		}
 		if bat := prepareBAT(); bat != nil {
 			transactionsPool = append(transactionsPool, bat)
@@ -80,7 +80,7 @@ loop:
 		if lastBlk, _ := env.DB.GetLastBlock(); lastBlk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
-			previousBlockHash = types.NewHash(blk.Hash())
+			previousBlockHash = blk.Hash()
 		}
 		isLastBlock := bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0
 		env.DB.PutBlock(blk, isLastBlock)
@@ -91,7 +91,7 @@ loop:
 			if blk, _ = env.DB.GetLastBlock(); blk == nil {
 				previousBlockHash = types.EmptyHash()
 			} else {
-				previousBlockHash = types.NewHash(blk.Hash())
+				previousBlockHash = blk.Hash()
 			}
 			if bat := prepareBAT(); bat != nil {
 				transactionsPool = append(transactionsPool, bat)
