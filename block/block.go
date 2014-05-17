@@ -70,7 +70,16 @@ func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []trans.T)
 		encodedTransactions[i] = make([]byte, len(t))
 		copy(encodedTransactions[i], t)
 	}
-	merkleRootHash, err := merkleRoot(encodedTransactions)
+
+	var merkleRootHash types.Hash
+	var err error
+
+	if len(encodedTransactions) > 0 {
+		merkleRootHash, err = merkleRoot(encodedTransactions)
+	} else {
+		merkleRootHash = types.EmptyHash()
+	}
+
 	if err != nil {
 		return nil, err
 	}
