@@ -109,6 +109,21 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord this random number for use during allocation: %s\n", name, resp.Id, resp.Random)
+	case "NameAllocation":
+		if len(flag.Args()) < 4 {
+			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name> <random>")
+			os.Exit(1)
+		}
+		alias := flag.Arg(1)
+		name := flag.Arg(2)
+		random := flag.Arg(3)
+		var resp api.NameAllocationReply
+		err := jsonrpc("NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: name, Random: random}, &resp)
+		if err != nil {
+			fmt.Printf("Can't make a name allocation because of %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Name allocation for %s has been submitted (%s)\n", name, resp.Id)
 	case "LastBlock":
 		var resp api.GetLastBlockReply
 		err := jsonrpc("BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
@@ -130,7 +145,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Previous block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %#x\nNonce: %v\nTransactions: %d\n",
-			hex.EncodeToString(resp.PreviousBlockHash[:]), hex.EncodeToString(resp.MerkleRootHash[:]),
+			hex.EncodeToString(resp.PreviousBlockHash), hex.EncodeToString(resp.MerkleRootHash),
 			time.Unix(resp.Timestamp, 0).String(), resp.Bits, resp.Nonce, resp.NumTransactions)
 	case "Transactions":
 		if len(flag.Args()) < 2 {
