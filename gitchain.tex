@@ -124,6 +124,20 @@ Signing concatenated string of a DEALLOCATE verb and a name itself prevents othe
 
 Upon name allocation, the holder of the private key used to allocate the name is granted full permissions to the repository.
 
+\section{Repository Transactions}
+
+\subsection{Object Announcement Transaction (OAT)}
+
+\begin{verbatim}
+ObjectAnnouncement(Hash: hash, Type: blob|tree|commit)
+\end{verbatim}
+
+\subsection{Reference Update Transaction (RUT)}
+
+\begin{verbatim}
+ReferenceUpdate(Repository: repository, Ref: ref, Hash: hash)
+\end{verbatim}
+
 \section{Object Storage}
 
 
