@@ -7,7 +7,6 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/keys"
-	"github.com/gitchain/gitchain/transaction"
 )
 
 type T struct {
@@ -18,56 +17,6 @@ type T struct {
 func NewDB(path string) (*T, error) {
 	db, err := bolt.Open(path, 0666)
 	return &T{Path: path, DB: db}, err
-}
-
-func (db *T) PutTransaction(txn transaction.T) error {
-	dbtx, err := db.DB.Begin(true)
-	success := false
-	defer func() {
-		if success {
-			dbtx.Commit()
-		} else {
-			dbtx.Rollback()
-		}
-	}()
-	if err != nil {
-		return err
-	}
-	bucket, err := dbtx.CreateBucketIfNotExists([]byte("transactions"))
-	if err != nil {
-		return err
-	}
-	encodedTx, err := txn.Encode()
-	if err != nil {
-		return err
-	}
-	err = bucket.Put(txn.Hash(), encodedTx)
-	if err != nil {
-		return err
-	}
-	success = true
-	return nil
-}
-
-func (db *T) GetTransaction(id []byte) (transaction.T, error) {
-	dbtx, err := db.DB.Begin(false)
-	defer dbtx.Rollback()
-	if err != nil {
-		return nil, err
-	}
-	bucket := dbtx.Bucket([]byte("transactions"))
-	if bucket == nil {
-		return nil, errors.New("transactions bucket does not exist")
-	}
-	txn := bucket.Get(id)
-	if txn == nil {
-		return nil, errors.New("transaction not found")
-	}
-	decodedTx, err := transaction.Decode(txn)
-	if err != nil {
-		return decodedTx, err
-	}
-	return decodedTx, nil
 }
 
 func (db *T) PutKey(alias string, key *ecdsa.PrivateKey, main bool) error {

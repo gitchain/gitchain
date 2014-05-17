@@ -49,7 +49,6 @@ loop:
 	select {
 	case msg = <-ch:
 		miningEmpty = false
-		env.DB.PutTransaction(msg)
 		transactionsPool = append(transactionsPool, msg)
 		if blk, _ = env.DB.GetLastBlock(); blk == nil {
 			previousBlockHash = types.EmptyHash()
@@ -74,6 +73,7 @@ loop:
 		}
 		isLastBlock := bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0
 		env.DB.PutBlock(blk, isLastBlock)
+		router.Send("/block", make(chan *block.Block), blk)
 		goto initPool
 	default:
 		if len(transactionsPool) == 0 && !miningEmpty {

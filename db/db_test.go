@@ -21,26 +21,6 @@ func fixtureSampleTransactions(t *testing.T) []transaction.T {
 	return []transaction.T{txn1, txn2, txn3}
 }
 
-func TestPutGetTransaction(t *testing.T) {
-	privateKey := generateECDSAKey(t)
-	txn, _ := transaction.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	db, err := NewDB("test.db")
-	defer os.Remove("test.db")
-
-	if err != nil {
-		t.Errorf("error opening database: %v", err)
-	}
-	err = db.PutTransaction(txn)
-	if err != nil {
-		t.Errorf("error putting transaction: %v", err)
-	}
-	txn1, err := db.GetTransaction(txn.Hash())
-	if err != nil {
-		t.Errorf("error getting transaction: %v", err)
-	}
-	assert.Equal(t, txn, txn1)
-}
-
 func TestPutGetKey(t *testing.T) {
 	key := generateECDSAKey(t)
 
