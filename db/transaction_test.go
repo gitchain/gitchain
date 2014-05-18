@@ -32,7 +32,7 @@ func TestGetTransactionBlock(t *testing.T) {
 
 	// Block<->transaction indexing
 	for i := range transactions {
-		block1, err := db.GetTransactionBlock(transactions[i].Transaction.Hash())
+		block1, err := db.GetTransactionBlock(transactions[i].Hash())
 		if err != nil {
 			t.Errorf("error getting transaction's block: %v", err)
 		}
@@ -51,7 +51,7 @@ func TestTransactionConfirmations(t *testing.T) {
 	transactions, _ := fixtureSampleTransactions(t)
 	confirmationsTest := func(count int, note string) {
 		for i := range transactions {
-			confirmations, err := db.GetTransactionConfirmations(transactions[i].Transaction.Hash())
+			confirmations, err := db.GetTransactionConfirmations(transactions[i].Hash())
 			if err != nil {
 				t.Errorf("error getting transaction's confirmations: %v", err)
 			}
@@ -111,7 +111,7 @@ func TestGetPreviousTransactionHashForPublicKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting previous transaction's for a pubkey: %v", err)
 	}
-	assert.True(t, bytes.Compare(tx, transactions[2].Transaction.Hash()) == 0)
+	assert.True(t, bytes.Compare(tx, transactions[2].Hash()) == 0)
 
 	privateKey := generateECDSAKey(t)
 
@@ -142,19 +142,19 @@ func TestGetNextTransactionHash(t *testing.T) {
 		t.Errorf("error putting block: %v", err)
 	}
 
-	tx, err := db.GetNextTransactionHash(transactions[0].Transaction.Hash())
+	tx, err := db.GetNextTransactionHash(transactions[0].Hash())
 	if err != nil {
 		t.Errorf("error getting next transaction: %v", err)
 	}
-	assert.True(t, bytes.Compare(tx, transactions[1].Transaction.Hash()) == 0)
+	assert.True(t, bytes.Compare(tx, transactions[1].Hash()) == 0)
 
-	tx, err = db.GetNextTransactionHash(transactions[1].Transaction.Hash())
+	tx, err = db.GetNextTransactionHash(transactions[1].Hash())
 	if err != nil {
 		t.Errorf("error getting next transaction: %v", err)
 	}
-	assert.True(t, bytes.Compare(tx, transactions[2].Transaction.Hash()) == 0)
+	assert.True(t, bytes.Compare(tx, transactions[2].Hash()) == 0)
 
-	tx, err = db.GetNextTransactionHash(transactions[2].Transaction.Hash())
+	tx, err = db.GetNextTransactionHash(transactions[2].Hash())
 	if err != nil {
 		t.Errorf("error getting next transaction: %v", err)
 	}
