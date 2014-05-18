@@ -58,7 +58,7 @@ angular.module('gitchain', ['corps.jsonrpc']).
               data["Hash"] = hash
               newBlocks.push(data)
               hash = data.PreviousBlockHash
-              if (hash != "0000000000000000000000000000000000000000000000000000000000000000" || newBlocks.length < 10) {
+              if (hash != "0000000000000000000000000000000000000000000000000000000000000000" && newBlocks.length < 5) {
                 api.BlockService.GetBlock({Hash: hash}).then(handleBlock)
               } else {
                 $scope.blocks = newBlocks
