@@ -12,7 +12,7 @@ Gitchain is an application of ideas behind Bitcoin, Namecoin and DHT applied to 
 [Support the project on Kickstarter](https://www.kickstarter.com/projects/612530753/gitchain)
 
 Build Instructions
-~~~~~~~~~~~~~~~~~~
+------------------
 
 ```shell
 $ make prepare # (only first time or whenver Godeps file is updated)
