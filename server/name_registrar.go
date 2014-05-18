@@ -13,6 +13,27 @@ import (
 )
 
 const RESERVATION_CONFIRMATIONS_REQUIRED = 3
+const ALLOCATION_CONFIRMATIONS_REQUIRED = 3
+
+func processPendingAllocations(srv *T) {
+	pending := srv.DB.ListPendingRepositories()
+	for i := range pending {
+		r, err := srv.DB.GetRepository(pending[i])
+		if err != nil {
+			log.Printf("error while processing pending repository %s: %v", pending[i], err)
+		}
+		c, err := srv.DB.GetTransactionConfirmations(r.NameAllocationTx)
+		if err != nil {
+			log.Printf("error while calculating pending repository's %s allocation confirmations (%s): %v",
+				pending[i], hex.EncodeToString(r.NameAllocationTx), err)
+		}
+		if c >= ALLOCATION_CONFIRMATIONS_REQUIRED {
+			r.Status = repository.ACTIVE
+			srv.DB.PutRepository(r)
+		}
+
+	}
+}
 
 func isValidReservation(reservation *transaction.Envelope, alloc *transaction.Envelope) bool {
 	allocT := alloc.Transaction.(*transaction.NameAllocation)
@@ -34,6 +55,7 @@ func NameRegistrar(srv *T) {
 loop:
 	select {
 	case blk := <-ch:
+		processPendingAllocations(srv)
 		for i := range blk.Transactions {
 			tx0 := blk.Transactions[i]
 			tx := tx0.Transaction
@@ -96,7 +118,7 @@ loop:
 
 				if confirmations >= RESERVATION_CONFIRMATIONS_REQUIRED {
 					// this reservation is confirmed
-					srv.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx.Hash()))
+					srv.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx0.Hash()))
 				} else {
 					// this allocation is wasted as the distance is not long enough
 				}

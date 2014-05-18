@@ -62,3 +62,42 @@ func TestListRepository(t *testing.T) {
 
 	assert.Equal(t, actualRepositories, expectedRepositories)
 }
+
+func TestListPendingRepository(t *testing.T) {
+
+	db, err := NewDB("test.db")
+	defer os.Remove("test.db")
+
+	if err != nil {
+		t.Errorf("error opening database: %v", err)
+	}
+
+	repo := repository.NewRepository("test", repository.PENDING, types.EmptyHash())
+	err = db.PutRepository(repo)
+	if err != nil {
+		t.Errorf("error putting repository: %v", err)
+	}
+
+	assert.Equal(t, db.ListPendingRepositories(), []string{"test"})
+
+	repo1 := repository.NewRepository("hello_world", repository.ACTIVE, types.EmptyHash())
+	err = db.PutRepository(repo1)
+	if err != nil {
+		t.Errorf("error putting repository: %v", err)
+	}
+
+	repo.Status = repository.ACTIVE
+	err = db.PutRepository(repo)
+	if err != nil {
+		t.Errorf("error updating repository: %v", err)
+	}
+
+	assert.Equal(t, db.ListPendingRepositories(), []string{})
+
+	actualRepositories := db.ListRepositories()
+	sort.Strings(actualRepositories)
+	expectedRepositories := []string{"test", "hello_world"}
+	sort.Strings(expectedRepositories)
+
+	assert.Equal(t, actualRepositories, expectedRepositories)
+}
