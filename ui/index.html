@@ -41,6 +41,11 @@
         <table class="table">
           <tr>
             <th>Hash</th>
+            <th>Transactions</th>
+          </tr>
+          <tr ng-repeat="block in blocks">
+            <td><gc-block>{{block.Hash}}</gc-block></td>
+            <td>{{block.NumTransactions}}</td>
           </tr>
         </table>
       </div>

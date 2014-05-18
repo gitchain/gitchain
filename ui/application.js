@@ -2,6 +2,7 @@ angular.module('gitchain', ['corps.jsonrpc']).
   config(['jsonRpcClientProvider', function(clientProvider) {
   	clientProvider.setServiceEndpoint("/rpc")
   	clientProvider.addService('KeyService', ['GeneratePrivateKey', 'ListPrivateKeys', 'SetMainKey', 'GetMainKey'])
+    clientProvider.addService('BlockService', ['GetBlock','BlockTransactions'])
   }])
   .directive('gcBlock', function() {
     return {
@@ -53,11 +54,27 @@ angular.module('gitchain', ['corps.jsonrpc']).
       }
     })
 
+    $scope.blocks = []
     $scope.info = {}
     var requestInfo = function() {
       $http({method: 'GET', url: '/info'}).success(function(data) {
          $scope.info = data
          $timeout(requestInfo, 500)
+         if ($scope.blocks.length == 0 || $scope.blocks[0].Hash != $scope.info.LastBlock) {
+           var hash = $scope.info.LastBlock
+           var newBlocks = []
+           var handleBlock = function(data) {
+              data["Hash"] = hash
+              newBlocks.push(data)
+              hash = data.PreviousBlockHash
+              if (hash != "0000000000000000000000000000000000000000000000000000000000000000" || newBlocks.length < 10) {
+                api.BlockService.GetBlock({Hash: hash}).then(handleBlock)
+              } else {
+                $scope.blocks = newBlocks
+              }
+           }
+           api.BlockService.GetBlock({Hash: hash}).then(handleBlock)
+         }
       })
     }
     requestInfo()
