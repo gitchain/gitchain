@@ -70,10 +70,11 @@ loop:
 		} else {
 			previousBlockHash = blk.Hash()
 		}
-		blockTransactionsPool := make([]*transaction.Envelope, len(transactionsPool)+1)
+		blockTransactionsPool := make([]*transaction.Envelope, 0)
 		if bat := prepareBAT(); bat != nil {
 			blockTransactionsPool = append(transactionsPool, bat)
 		}
+
 		blk, err := block.NewBlock(previousBlockHash, targetBits(), blockTransactionsPool)
 		if err != nil {
 			log.Printf("Error while creating a new block: %v", err)
@@ -117,6 +118,7 @@ loop:
 				miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 				miningEmpty = true
 			}
+			goto initPool
 
 		}
 	}
