@@ -15,6 +15,6 @@ Build Instructions
 ------------------
 
 ```shell
-$ make prepare # (only first time or whenver Godeps file is updated)
+$ make prepare # (only first time or whenever Godeps file is updated)
 $ make
 ```
