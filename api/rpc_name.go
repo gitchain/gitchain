@@ -8,6 +8,7 @@ import (
 	"github.com/gitchain/gitchain/env"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/util"
 )
 
 type NameService struct{}
@@ -33,6 +34,9 @@ func (srv *NameService) NameReservation(r *http.Request, args *NameReservationAr
 	tx, random := transaction.NewNameReservation(args.Name, &key.PublicKey)
 	reply.Id = hex.EncodeToString(tx.Hash())
 	reply.Random = hex.EncodeToString(random)
+	// We save sha(random+name)=txhash to scraps to be able to find
+	// the transaction hash by random and number during allocation
+	env.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), tx.Hash())
 	router.Send("/transaction", make(chan transaction.T), tx)
 	return nil
 }

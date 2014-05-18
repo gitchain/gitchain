@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEncodeDecodeECDSA(t *testing.T) {
+func TestEncodeDecodeECDSAPrivateKey(t *testing.T) {
 	key, err := GenerateECDSA()
 	if err != nil {
 		t.Errorf("error while generating ECDSA key: %v", err)
@@ -21,6 +21,23 @@ func TestEncodeDecodeECDSA(t *testing.T) {
 	}
 
 	assert.Equal(t, key, key1)
+
+}
+func TestEncodeDecodeECDSAPublicKey(t *testing.T) {
+	key, err := GenerateECDSA()
+	if err != nil {
+		t.Errorf("error while generating ECDSA key: %v", err)
+	}
+	bytes, err := EncodeECDSAPublicKey(&key.PublicKey)
+	if err != nil {
+		t.Errorf("error while encoding ECDSA key: %v", err)
+	}
+	key1, err := DecodeECDSAPublicKey(bytes)
+	if err != nil {
+		t.Errorf("error while decoding ECDSA key: %v", err)
+	}
+
+	assert.Equal(t, &key.PublicKey, key1)
 
 }
 

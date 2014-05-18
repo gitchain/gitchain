@@ -28,10 +28,11 @@ type NameReservation struct {
 func NewNameReservation(name string, publicKey *ecdsa.PublicKey) (txn *NameReservation, random []byte) {
 	buf := make([]byte, 4)
 	rand.Read(buf)
+	pubkey, _ := keys.EncodeECDSAPublicKey(publicKey) // FIXME: what to do with the error?
 	return &NameReservation{
 			Version:   NAME_RESERVATION_VERSION,
 			Hashed:    util.SHA256(append([]byte(name), buf...)),
-			PublicKey: []byte(keys.ECDSAPublicKeyToString(*publicKey))},
+			PublicKey: pubkey},
 		buf
 }
 

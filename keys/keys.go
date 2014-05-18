@@ -67,6 +67,27 @@ func ECDSAPublicKeyToString(key ecdsa.PublicKey) string {
 	return string(base58.EncodeBig(b, i))
 }
 
+func EncodeECDSAPublicKey(key *ecdsa.PublicKey) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	err := enc.Encode([]big.Int{*key.X, *key.Y})
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func DecodeECDSAPublicKey(b []byte) (*ecdsa.PublicKey, error) {
+	var p []big.Int
+	buf := bytes.NewBuffer(b)
+	dec := gob.NewDecoder(buf)
+	err := dec.Decode(&p)
+	if err != nil {
+		return nil, err
+	}
+	return &ecdsa.PublicKey{Curve: btcec.S256(), X: &p[0], Y: &p[1]}, nil
+}
+
 func EqualECDSAPrivateKeys(k1, k2 *ecdsa.PrivateKey) (bool, error) {
 	k1e, err := EncodeECDSAPrivateKey(k1)
 	if err != nil {

@@ -108,10 +108,10 @@ func main() {
 			fmt.Printf("Can't make a name reservation because of %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord this random number for use during allocation: %s\n", name, resp.Id, resp.Random)
+		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord the above transaction hash and following random number for use during allocation: %s\n", name, resp.Id, resp.Random)
 	case "NameAllocation":
 		if len(flag.Args()) < 4 {
-			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name> <random>")
+			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name> <random or reservation tx hash>")
 			os.Exit(1)
 		}
 		alias := flag.Arg(1)
@@ -124,6 +124,16 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Name allocation for %s has been submitted (%s)\n", name, resp.Id)
+	case "ListRepositories":
+		var resp api.ListRepositoriesReply
+		err := jsonrpc("RepositoryService.ListRepositories", &api.ListRepositoriesArgs{}, &resp)
+		if err != nil {
+			fmt.Printf("Can't list repositories because of %v\n", err)
+			os.Exit(1)
+		}
+		for i := range resp.Repositories {
+			fmt.Printf("%s\n", resp.Repositories[i])
+		}
 	case "LastBlock":
 		var resp api.GetLastBlockReply
 		err := jsonrpc("BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
@@ -179,6 +189,7 @@ func main() {
 		fallthrough
 	default:
 		go server.MiningFactory()
+		go server.NameRegistrar()
 		go server.TransactionListener()
 		api.Start()
 	}
