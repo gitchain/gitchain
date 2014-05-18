@@ -110,7 +110,9 @@ func (db *T) ListKeys() []string {
 	}
 	keys := make([]string, 0)
 	bucket.ForEach(func(k, v []byte) error {
-		keys = append(keys, string(k))
+		if string(k) != "main" {
+			keys = append(keys, string(k))
+		}
 		return nil
 	})
 	return keys

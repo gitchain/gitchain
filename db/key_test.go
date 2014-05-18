@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPutGetKey(t *testing.T) {
+func TestPutGetListKey(t *testing.T) {
 	key := generateECDSAKey(t)
 
 	db, err := NewDB("test.db")
@@ -24,6 +24,7 @@ func TestPutGetKey(t *testing.T) {
 		t.Errorf("error getting main key: %v", err)
 	}
 	assert.Nil(t, mainKey)
+	assert.Equal(t, db.ListKeys(), []string(nil))
 
 	err = db.PutKey("alias", key, false)
 	if err != nil {
@@ -37,6 +38,7 @@ func TestPutGetKey(t *testing.T) {
 		t.Errorf("no key was retrieved")
 	}
 	assert.Equal(t, key, key1)
+	assert.Equal(t, db.ListKeys(), []string{"alias"})
 
 	// Even though we did specify this key as non-main, it will still be
 	// considered main as the first key
@@ -52,7 +54,7 @@ func TestPutGetKey(t *testing.T) {
 	// Try adding another key that goes before (alphabetically)
 	aaronkey := generateECDSAKey(t)
 
-	err = db.PutKey("aaron", aaronkey, true)
+	err = db.PutKey("aaron", aaronkey, false)
 	key3, err := db.GetMainKey()
 	if err != nil {
 		t.Errorf("error getting main key: %v", err)
@@ -65,7 +67,7 @@ func TestPutGetKey(t *testing.T) {
 	// Try adding another key that goes after (alphabetically)
 	betakey := generateECDSAKey(t)
 
-	err = db.PutKey("beta", betakey, true)
+	err = db.PutKey("beta", betakey, false)
 	key31, err := db.GetMainKey()
 	if err != nil {
 		t.Errorf("error getting main key: %v", err)
@@ -73,9 +75,9 @@ func TestPutGetKey(t *testing.T) {
 	if key31 == nil {
 		t.Errorf("there should be an implicit main key")
 	}
-	assert.Equal(t, betakey, key31)
+	assert.Equal(t, aaronkey, key31)
 
-	// This proves that the last added key, in absence of an explicitly
+	// This proves that the first key by order, in absence of an explicitly
 	// set main key, will be considered main
 
 	// Try adding another key and setting it as a main key explicitly
