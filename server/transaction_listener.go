@@ -98,7 +98,7 @@ loop:
 		}
 		goto initPool
 	default:
-		if len(transactionsPool) == 0 && !miningEmpty {
+		if key, _ := env.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil {
 			// if there are no transactions to be included into a block, try mining an empty/BAT-only block
 			if blk, _ = env.DB.GetLastBlock(); blk == nil {
 				previousBlockHash = types.EmptyHash()
