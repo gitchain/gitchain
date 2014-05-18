@@ -65,15 +65,23 @@ loop:
 			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
 	case blk = <-blockChannel:
+
 		miningEmpty = false
 		if lastBlk, _ := env.DB.GetLastBlock(); lastBlk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
-			previousBlockHash = blk.Hash()
+			previousBlockHash = lastBlk.Hash()
 		}
-		isLastBlock := bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0
-		env.DB.PutBlock(blk, isLastBlock)
-		router.Send("/block", make(chan *block.Block), blk)
+		if bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0 {
+			// this is a legitimate last block
+			env.DB.PutBlock(blk, true)
+			router.Send("/block", make(chan *block.Block), blk)
+			router.Send("/block/last", make(chan *block.Block), blk)
+		} else {
+			// resubmit the block with new previous block for mining
+			blk.PreviousBlockHash = previousBlockHash
+			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
+		}
 		goto initPool
 	default:
 		if len(transactionsPool) == 0 && !miningEmpty {
