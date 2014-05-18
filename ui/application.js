@@ -35,16 +35,7 @@ angular.module('gitchain', ['corps.jsonrpc']).
           if (alias !== null) {
             api.KeyService.GeneratePrivateKey({Alias: alias}).then(function(data) {
               loadPrivateKeys()
-              bootbox.dialog({
-                message: "Private key pair named " + alias + " has been generated",
-                title: "Alias created",
-                buttons: {
-                  confirms: {
-                    label: "OK",
-                    className: "btn-success",
-                  }
-                }
-              })
+              $.notify("Private key `" + alias + "' has been generated", "success")
             })
           } else {
           }
