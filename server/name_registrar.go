@@ -20,15 +20,18 @@ func isValidReservation(reservation *transaction.Envelope, alloc *transaction.En
 	switch reservation.Transaction.(type) {
 	case *transaction.NameReservation:
 		tx1 := reservation.Transaction.(*transaction.NameReservation)
-		return bytes.Compare(util.SHA256(append(allocT.Rand, []byte(allocT.Name)...)), tx1.Hashed) == 0
+		return bytes.Compare(util.SHA256(append([]byte(allocT.Name), allocT.Rand...)), tx1.Hashed) == 0
 	default:
 		return false
 	}
 }
 
 func NameRegistrar() {
-	ch := make(chan block.Block)
-	router.PermanentSubscribe("/block", ch)
+	ch := make(chan *block.Block)
+	_, err := router.PermanentSubscribe("/block", ch)
+	if err != nil {
+		log.Printf("Error while subscribing to /block: %v", err)
+	}
 loop:
 	select {
 	case blk := <-ch:
@@ -42,7 +45,7 @@ loop:
 				// 1.1. check if it was done with this server and there's a reference
 				//      in scrap records
 				reservation, err := env.DB.GetScrap(util.SHA256(append(tx1.Rand, []byte(tx1.Name)...)))
-				var reservationTx *transaction.NameReservation
+				var reservationTx *transaction.Envelope
 				if reservation == nil || err != nil {
 					// 1.2 no scrap found, so try searching throughout database
 					curBlock, err := env.DB.GetLastBlock()
@@ -53,7 +56,7 @@ loop:
 					for curBlock != nil {
 						for i := range curBlock.Transactions {
 							if isValidReservation(curBlock.Transactions[i], tx0) {
-								reservationTx = curBlock.Transactions[i].Transaction.(*transaction.NameReservation)
+								reservationTx = curBlock.Transactions[i]
 							}
 						}
 
@@ -68,12 +71,13 @@ loop:
 				} else {
 					blk, err := env.DB.GetTransactionBlock(reservation)
 					if err != nil {
-						log.Printf("can't find block for name reservation %s", hex.EncodeToString(reservationTx.Hash()))
+						log.Printf("can't find block for name reservation %s: %v", hex.EncodeToString(reservationTx.Hash()), err)
 						break
 					}
 					for i := range blk.Transactions {
 						if isValidReservation(blk.Transactions[i], tx0) {
-							reservationTx = blk.Transactions[i].Transaction.(*transaction.NameReservation)
+							reservationTx = blk.Transactions[i]
+							break
 						}
 					}
 
@@ -87,13 +91,13 @@ loop:
 				// 2. verify its maturity
 				confirmations, err := env.DB.GetTransactionConfirmations(reservationTx.Hash())
 				if err != nil {
-					log.Printf("can't compute number of confirmations for reservation %s", hex.EncodeToString(reservationTx.Hash()))
+					log.Printf("can't compute number of confirmations for reservation %s: %v", hex.EncodeToString(reservationTx.Hash()), err)
 					break
 				}
 
 				if confirmations >= RESERVATION_CONFIRMATIONS_REQUIRED {
 					// this reservation is confirmed
-					env.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx1.Hash()))
+					env.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx.Hash()))
 				} else {
 					// this allocation is wasted as the distance is not long enough
 				}

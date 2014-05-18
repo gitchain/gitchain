@@ -36,7 +36,7 @@ func prepareBAT() *transaction.Envelope {
 }
 
 func targetBits() uint32 {
-	return 0x1e00ffff
+	return 0x1f00ffff
 }
 
 func TransactionListener() {
@@ -92,8 +92,13 @@ loop:
 		if bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0 {
 			// this is a legitimate last block
 			env.DB.PutBlock(blk, true)
-			router.Send("/block", make(chan *block.Block), blk)
-			router.Send("/block/last", make(chan *block.Block), blk)
+			if err := router.Send("/block", make(chan *block.Block), blk); err != nil {
+				log.Printf("error while sending block: %v", err)
+			}
+			if err := router.Send("/block/last", make(chan *block.Block), blk); err != nil {
+				log.Printf("error while sending block: %v", err)
+			}
+
 		} else {
 			// resubmit the block with new previous block for mining
 			blk.PreviousBlockHash = previousBlockHash
@@ -101,7 +106,8 @@ loop:
 		}
 		goto initPool
 	case <-time.After(time.Second * 1):
-		if key, _ := env.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil {
+		if key, _ := env.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil &&
+			len(GetMiningStatus().Miners) == 0 {
 			// if there are no transactions to be included into a block, try mining an empty/BAT-only block
 			if blk, _ = env.DB.GetLastBlock(); blk == nil {
 				previousBlockHash = types.EmptyHash()

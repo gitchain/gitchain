@@ -45,7 +45,7 @@ func (srv *NameService) NameReservation(r *http.Request, args *NameReservationAr
 	reply.Random = hex.EncodeToString(random)
 	// We save sha(random+name)=txhash to scraps to be able to find
 	// the transaction hash by random and number during allocation
-	env.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), tx.Hash())
+	env.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), txe.Hash())
 	router.Send("/transaction", make(chan *transaction.Envelope), txe)
 	return nil
 }
