@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/block"
-	"github.com/gitchain/gitchain/env"
 	"github.com/gitchain/gitchain/server"
 )
 
@@ -16,7 +15,7 @@ type Info struct {
 }
 
 func info(resp http.ResponseWriter, req *http.Request) {
-	lastBlock, err := env.DB.GetLastBlock()
+	lastBlock, err := srv.DB.GetLastBlock()
 	if err != nil {
 		log.Printf("Error while serving /info: %v", err)
 	}

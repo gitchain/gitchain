@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/gitchain/gitchain/env"
 	"github.com/gitchain/gitchain/keys"
 )
 
@@ -19,13 +18,13 @@ type GeneratePrivateKeyReply struct {
 	PublicKey string
 }
 
-func (srv *KeyService) GeneratePrivateKey(r *http.Request, args *GeneratePrivateKeyArgs, reply *GeneratePrivateKeyReply) error {
+func (*KeyService) GeneratePrivateKey(r *http.Request, args *GeneratePrivateKeyArgs, reply *GeneratePrivateKeyReply) error {
 	key, err := keys.GenerateECDSA()
 	if err != nil {
 		reply.Success = false
 		return err
 	}
-	err = env.DB.PutKey(args.Alias, key, false)
+	err = srv.DB.PutKey(args.Alias, key, false)
 	if err != nil {
 		reply.Success = false
 		return err
@@ -42,8 +41,8 @@ type ListPrivateKeysReply struct {
 	Aliases []string
 }
 
-func (srv *KeyService) ListPrivateKeys(r *http.Request, args *ListPrivateKeysArgs, reply *ListPrivateKeysReply) error {
-	reply.Aliases = env.DB.ListKeys()
+func (*KeyService) ListPrivateKeys(r *http.Request, args *ListPrivateKeysArgs, reply *ListPrivateKeysReply) error {
+	reply.Aliases = srv.DB.ListKeys()
 	return nil
 }
 
@@ -55,13 +54,13 @@ type SetMainKeyReply struct {
 	Success bool
 }
 
-func (srv *KeyService) SetMainKey(r *http.Request, args *SetMainKeyArgs, reply *SetMainKeyReply) error {
-	key, err := env.DB.GetKey(args.Alias)
+func (*KeyService) SetMainKey(r *http.Request, args *SetMainKeyArgs, reply *SetMainKeyReply) error {
+	key, err := srv.DB.GetKey(args.Alias)
 	if err != nil {
 		return err
 	}
 	if key != nil {
-		err := env.DB.PutKey(args.Alias, key, true)
+		err := srv.DB.PutKey(args.Alias, key, true)
 		if err != nil {
 			return err
 		}
@@ -79,14 +78,14 @@ type GetMainKeyReply struct {
 	Alias string
 }
 
-func (srv *KeyService) GetMainKey(r *http.Request, args *GetMainKeyArgs, reply *GetMainKeyReply) error {
-	allKeys := env.DB.ListKeys()
-	mainKey, err := env.DB.GetMainKey()
+func (*KeyService) GetMainKey(r *http.Request, args *GetMainKeyArgs, reply *GetMainKeyReply) error {
+	allKeys := srv.DB.ListKeys()
+	mainKey, err := srv.DB.GetMainKey()
 	if err != nil {
 		return err
 	}
 	for i := range allKeys {
-		key, err := env.DB.GetKey(allKeys[i])
+		key, err := srv.DB.GetKey(allKeys[i])
 		if err != nil {
 			return err
 		}

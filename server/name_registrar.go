@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/gitchain/gitchain/block"
-	"github.com/gitchain/gitchain/env"
 	"github.com/gitchain/gitchain/repository"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
@@ -26,7 +25,7 @@ func isValidReservation(reservation *transaction.Envelope, alloc *transaction.En
 	}
 }
 
-func NameRegistrar() {
+func NameRegistrar(srv *T) {
 	ch := make(chan *block.Block)
 	_, err := router.PermanentSubscribe("/block", ch)
 	if err != nil {
@@ -44,11 +43,11 @@ loop:
 				// 1. find the reservation
 				// 1.1. check if it was done with this server and there's a reference
 				//      in scrap records
-				reservation, err := env.DB.GetScrap(util.SHA256(append(tx1.Rand, []byte(tx1.Name)...)))
+				reservation, err := srv.DB.GetScrap(util.SHA256(append(tx1.Rand, []byte(tx1.Name)...)))
 				var reservationTx *transaction.Envelope
 				if reservation == nil || err != nil {
 					// 1.2 no scrap found, so try searching throughout database
-					curBlock, err := env.DB.GetLastBlock()
+					curBlock, err := srv.DB.GetLastBlock()
 					if err != nil {
 						log.Printf("can't find last block during name allocation attempt")
 						break
@@ -61,7 +60,7 @@ loop:
 						}
 
 						h := curBlock.PreviousBlockHash
-						curBlock, err = env.DB.GetBlock(h)
+						curBlock, err = srv.DB.GetBlock(h)
 						if err != nil {
 							log.Printf("can't find block %s during name allocation attempt", hex.EncodeToString(h))
 							break
@@ -69,7 +68,7 @@ loop:
 					}
 
 				} else {
-					blk, err := env.DB.GetTransactionBlock(reservation)
+					blk, err := srv.DB.GetTransactionBlock(reservation)
 					if err != nil {
 						log.Printf("can't find block for name reservation %s: %v", hex.EncodeToString(reservationTx.Hash()), err)
 						break
@@ -89,7 +88,7 @@ loop:
 				}
 
 				// 2. verify its maturity
-				confirmations, err := env.DB.GetTransactionConfirmations(reservationTx.Hash())
+				confirmations, err := srv.DB.GetTransactionConfirmations(reservationTx.Hash())
 				if err != nil {
 					log.Printf("can't compute number of confirmations for reservation %s: %v", hex.EncodeToString(reservationTx.Hash()), err)
 					break
@@ -97,7 +96,7 @@ loop:
 
 				if confirmations >= RESERVATION_CONFIRMATIONS_REQUIRED {
 					// this reservation is confirmed
-					env.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx.Hash()))
+					srv.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx.Hash()))
 				} else {
 					// this allocation is wasted as the distance is not long enough
 				}

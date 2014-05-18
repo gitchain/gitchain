@@ -5,24 +5,28 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
 	"os"
 
-	"github.com/gitchain/gitchain/api"
-	"github.com/gitchain/gitchain/env"
 	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/api"
 
 	"github.com/gorilla/rpc/json"
 )
 
 func jsonrpc(method string, req, res interface{}) error {
+	var httpPort int
+	flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
+	flag.Parse()
+
 	buf, err := json.EncodeClientRequest(method, req)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/rpc", env.Port), "application/json", bytes.NewBuffer(buf))
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/rpc", httpPort), "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}
@@ -172,7 +176,11 @@ func main() {
 			fmt.Println(resp.Transactions[i])
 		}
 	case "Info":
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", env.Port))
+		var httpPort int
+		flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
+		flag.Parse()
+
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", httpPort))
 		if err != nil {
 			fmt.Printf("Can't retrieve info because of %v\n", err)
 			os.Exit(1)
@@ -187,10 +195,21 @@ func main() {
 	case "Serve":
 		fallthrough
 	default:
-		go server.MiningFactory()
-		go server.NameRegistrar()
-		go server.TransactionListener()
-		api.Start()
+		var dbPath string
+		var httpPort int
+		flag.StringVar(&dbPath, "db", "gitchain.db", "path to database, defaults to gitchain.db")
+		flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
+		flag.Parse()
+
+		srv, err := server.New(httpPort, dbPath)
+		if err != nil {
+			log.Printf("Error during server initialization: %v", err)
+			os.Exit(1)
+		}
+		go server.MiningFactory(srv)
+		go server.NameRegistrar(srv)
+		go server.TransactionListener(srv)
+		api.Start(srv)
 	}
 
 }

@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/gitchain/gitchain/block"
-	"github.com/gitchain/gitchain/env"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 )
 
-func prepareBAT() *transaction.Envelope {
-	key, err := env.DB.GetMainKey()
+func prepareBAT(srv *T) *transaction.Envelope {
+	key, err := srv.DB.GetMainKey()
 	if err != nil {
 		log.Printf("Error while attempting to retrieve main key: %v", err)
 	}
@@ -22,7 +21,7 @@ func prepareBAT() *transaction.Envelope {
 		if err != nil {
 			log.Printf("Error while creating a BAT: %v", err)
 		} else {
-			hash, err := env.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
+			hash, err := srv.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
 			if err != nil {
 				log.Printf("Error while creating a BAT: %v", err)
 			}
@@ -39,7 +38,7 @@ func targetBits() uint32 {
 	return 0x1f00ffff
 }
 
-func TransactionListener() {
+func TransactionListener(srv *T) {
 	var msg *transaction.Envelope
 	var blk *block.Block
 	blockChannel := make(chan *block.Block)
@@ -65,13 +64,13 @@ loop:
 		}
 		miningEmpty = false
 		transactionsPool = append(transactionsPool, msg)
-		if blk, _ = env.DB.GetLastBlock(); blk == nil {
+		if blk, _ = srv.DB.GetLastBlock(); blk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
 			previousBlockHash = blk.Hash()
 		}
 		blockTransactionsPool := make([]*transaction.Envelope, 0)
-		if bat := prepareBAT(); bat != nil {
+		if bat := prepareBAT(srv); bat != nil {
 			blockTransactionsPool = append(transactionsPool, bat)
 		}
 
@@ -84,14 +83,14 @@ loop:
 	case blk = <-blockChannel:
 
 		miningEmpty = false
-		if lastBlk, _ := env.DB.GetLastBlock(); lastBlk == nil {
+		if lastBlk, _ := srv.DB.GetLastBlock(); lastBlk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
 			previousBlockHash = lastBlk.Hash()
 		}
 		if bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0 {
 			// this is a legitimate last block
-			env.DB.PutBlock(blk, true)
+			srv.DB.PutBlock(blk, true)
 			if err := router.Send("/block", make(chan *block.Block), blk); err != nil {
 				log.Printf("error while sending block: %v", err)
 			}
@@ -106,15 +105,15 @@ loop:
 		}
 		goto initPool
 	case <-time.After(time.Second * 1):
-		if key, _ := env.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil &&
+		if key, _ := srv.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil &&
 			len(GetMiningStatus().Miners) == 0 {
 			// if there are no transactions to be included into a block, try mining an empty/BAT-only block
-			if blk, _ = env.DB.GetLastBlock(); blk == nil {
+			if blk, _ = srv.DB.GetLastBlock(); blk == nil {
 				previousBlockHash = types.EmptyHash()
 			} else {
 				previousBlockHash = blk.Hash()
 			}
-			if bat := prepareBAT(); bat != nil {
+			if bat := prepareBAT(srv); bat != nil {
 				transactionsPool = append(transactionsPool, bat)
 			}
 			blk, err := block.NewBlock(previousBlockHash, targetBits(), transactionsPool)

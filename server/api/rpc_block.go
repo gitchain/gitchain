@@ -3,8 +3,6 @@ package api
 import (
 	"encoding/hex"
 	"net/http"
-
-	"github.com/gitchain/gitchain/env"
 )
 
 type BlockService struct{}
@@ -16,8 +14,8 @@ type GetLastBlockReply struct {
 	Hash string
 }
 
-func (srv *BlockService) GetLastBlock(r *http.Request, args *GetLastBlockArgs, reply *GetLastBlockReply) error {
-	block, err := env.DB.GetLastBlock()
+func (*BlockService) GetLastBlock(r *http.Request, args *GetLastBlockArgs, reply *GetLastBlockReply) error {
+	block, err := srv.DB.GetLastBlock()
 	if err != nil {
 		return err
 	}
@@ -39,16 +37,16 @@ type GetBlockReply struct {
 	NumTransactions   int
 }
 
-func (srv *BlockService) GetBlock(r *http.Request, args *GetBlockArgs, reply *GetBlockReply) error {
+func (*BlockService) GetBlock(r *http.Request, args *GetBlockArgs, reply *GetBlockReply) error {
 	hash, err := hex.DecodeString(args.Hash)
 	if err != nil {
 		return err
 	}
-	block, err := env.DB.GetBlock(hash)
+	block, err := srv.DB.GetBlock(hash)
 	if err != nil {
 		return err
 	}
-	nextblock, err := env.DB.GetNextBlock(hash)
+	nextblock, err := srv.DB.GetNextBlock(hash)
 	if err != nil {
 		return err
 	}
@@ -72,12 +70,12 @@ type BlockTransactionsReply struct {
 	Transactions []string
 }
 
-func (srv *BlockService) BlockTransactions(r *http.Request, args *BlockTransactionsArgs, reply *BlockTransactionsReply) error {
+func (*BlockService) BlockTransactions(r *http.Request, args *BlockTransactionsArgs, reply *BlockTransactionsReply) error {
 	hash, err := hex.DecodeString(args.Hash)
 	if err != nil {
 		return err
 	}
-	block, err := env.DB.GetBlock(hash)
+	block, err := srv.DB.GetBlock(hash)
 	if err != nil {
 		return err
 	}

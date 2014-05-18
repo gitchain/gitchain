@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/gitchain/gitchain/env"
+	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/ui"
 	"github.com/gorilla/mux"
 )
 
-func Start() {
+var srv *server.T
+
+func Start(srvr *server.T) {
+	srv = srvr
 
 	r := mux.NewRouter()
 
@@ -62,7 +65,7 @@ func Start() {
 
 	http.Handle("/", r)
 
-	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", env.Port), nil)
+	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", srv.HttpPort), nil)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gitchain/gitchain/env"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
@@ -24,8 +23,8 @@ type NameReservationReply struct {
 	Random string
 }
 
-func (srv *NameService) NameReservation(r *http.Request, args *NameReservationArgs, reply *NameReservationReply) error {
-	key, err := env.DB.GetKey(args.Alias)
+func (NameService) NameReservation(r *http.Request, args *NameReservationArgs, reply *NameReservationReply) error {
+	key, err := srv.DB.GetKey(args.Alias)
 	if err != nil {
 		return err
 	}
@@ -34,7 +33,7 @@ func (srv *NameService) NameReservation(r *http.Request, args *NameReservationAr
 	}
 	tx, random := transaction.NewNameReservation(args.Name)
 
-	hash, err := env.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
+	hash, err := srv.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
 	if err != nil {
 		log.Printf("Error while preparing transaction: %v", err)
 	}
@@ -45,7 +44,7 @@ func (srv *NameService) NameReservation(r *http.Request, args *NameReservationAr
 	reply.Random = hex.EncodeToString(random)
 	// We save sha(random+name)=txhash to scraps to be able to find
 	// the transaction hash by random and number during allocation
-	env.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), txe.Hash())
+	srv.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), txe.Hash())
 	router.Send("/transaction", make(chan *transaction.Envelope), txe)
 	return nil
 }
@@ -60,8 +59,8 @@ type NameAllocationReply struct {
 	Id string
 }
 
-func (srv *NameService) NameAllocation(r *http.Request, args *NameAllocationArgs, reply *NameAllocationReply) error {
-	key, err := env.DB.GetKey(args.Alias)
+func (NameService) NameAllocation(r *http.Request, args *NameAllocationArgs, reply *NameAllocationReply) error {
+	key, err := srv.DB.GetKey(args.Alias)
 	if err != nil {
 		return err
 	}
@@ -77,7 +76,7 @@ func (srv *NameService) NameAllocation(r *http.Request, args *NameAllocationArgs
 		return err
 	}
 
-	hash, err := env.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
+	hash, err := srv.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
 	if err != nil {
 		log.Printf("Error while preparing transaction: %v", err)
 	}
