@@ -11,6 +11,7 @@ import (
 type Miner struct {
 	OriginalResponseChannel chan *block.Block `json:"-"`
 	StartTime               time.Time
+	NumTransactions         int
 }
 
 type MinerMap map[*block.Block]Miner
@@ -63,7 +64,7 @@ loop:
 			sreq.ResponseChannel <- status
 		case MiningFactoryInstantiationRequest:
 			ireq := msg.(MiningFactoryInstantiationRequest)
-			status.Miners[ireq.Block] = Miner{OriginalResponseChannel: ireq.ResponseChannel, StartTime: time.Now()}
+			status.Miners[ireq.Block] = Miner{OriginalResponseChannel: ireq.ResponseChannel, StartTime: time.Now(), NumTransactions: len(ireq.Block.Transactions)}
 			go ireq.Block.Mine(minerCh)
 		}
 	}
