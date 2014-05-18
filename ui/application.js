@@ -2,10 +2,18 @@ angular.module('gitchain', ['corps.jsonrpc']).
   config(['jsonRpcClientProvider', function(clientProvider) {
   	clientProvider.setServiceEndpoint("/rpc")
   	clientProvider.addService('KeyService', ['GeneratePrivateKey', 'ListPrivateKeys', 'SetMainKey', 'GetMainKey'])
-  }]).
-  controller('MainController', ['$scope', '$http', '$timeout', 'jsonRpcClient',
+  }])
+  .directive('gcBlock', function() {
+    return {
+      restrict: 'E'
+    };
+  })
+  .controller('MainController', ['$scope', '$http', '$timeout', 'jsonRpcClient',
   function($scope, $http, $timeout,api) {
 
+    $scope.block = function(block) {
+      console.log(block);
+    }
     $scope.privateKeys = []
     $scope.mainPrivateKey = null
 

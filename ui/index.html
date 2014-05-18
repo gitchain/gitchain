@@ -25,8 +25,6 @@
     <div class="container">
       <div class="panel panel-default">
         <div class="panel-body">
-          Last block: {{info.LastBlock || '00000000000000000000000000000000'}}
-          Blocks mined: {{info.Mining.BlocksMined}}
           <div class="nav pull-right">
             Private key
             <select ng-model="mainPrivateKey" ng-options="key for key in privateKeys">
@@ -34,6 +32,22 @@
           </div>
         </div>
       </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Blocks</h3>
+      </div>
+      <div class="panel-body">
+        <table class="table">
+          <tr>
+            <th>Hash</th>
+          </tr>
+        </table>
+      </div>
+      <div class="panel-footer">
+        Last block: <gc-block>{{info.LastBlock || '00000000000000000000000000000000'}}</gc-block>
+      </div>
+    </div>
 
       <div class="panel panel-default">
         <div class="panel-heading">
@@ -52,6 +66,9 @@
               <td>{{miner.NumTransactions}}</td>
             </tr>
           </table>
+        </div>
+        <div class="panel-footer">
+          {{info.Mining.BlocksMined}} <ng-pluralize count="info.Mining.BlocksMined" when="{'0': 'blocks', '1': 'block', 'other': 'blocks'}"></ng-pluralize> mined since startup
         </div>
       </div>
 
