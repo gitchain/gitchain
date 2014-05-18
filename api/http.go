@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gitchain/gitchain/env"
+	"github.com/gitchain/gitchain/ui"
 	"github.com/gorilla/mux"
 )
 
@@ -35,6 +38,26 @@ func Start() {
 		fmt.Println(req, body)
 
 		resp.Write([]byte(mux.Vars(req)["path"]))
+	})
+
+	// UI
+	r.Methods("GET").Path("/websocket").HandlerFunc(websocketHandler)
+	r.Methods("GET").Path("/").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		resp.Header().Add("Content-Type", "text/html")
+		content, _ := ui.Asset("index.html")
+		resp.Write(content)
+	})
+	r.Methods("GET").Path("/{path}").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		path := mux.Vars(req)["path"]
+		ext := filepath.Ext(path)
+		resp.Header().Add("Content-Type", mime.TypeByExtension(ext))
+		content, _ := ui.Asset(path)
+		if content == nil {
+			resp.WriteHeader(404)
+			resp.Write([]byte{})
+		} else {
+			resp.Write(content)
+		}
 	})
 
 	http.Handle("/", r)
