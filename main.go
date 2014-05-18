@@ -135,7 +135,7 @@ func main() {
 			os.Exit(1)
 		}
 		for i := range resp.Repositories {
-			fmt.Printf("%s\n", resp.Repositories[i])
+			fmt.Printf("%s %s %s\n", resp.Repositories[i].Name, resp.Repositories[i].Status, resp.Repositories[i].NameAllocationTx)
 		}
 	case "LastBlock":
 		var resp api.GetLastBlockReply
