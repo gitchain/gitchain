@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/env"
-	"github.com/gitchain/gitchain/types"
 )
 
 type BlockService struct{}
@@ -31,8 +30,9 @@ type GetBlockArgs struct {
 }
 
 type GetBlockReply struct {
-	PreviousBlockHash types.Hash
-	MerkleRootHash    types.Hash
+	NextBlockHash     string
+	PreviousBlockHash string
+	MerkleRootHash    string
 	Timestamp         int64
 	Bits              uint32
 	Nonce             uint32
@@ -48,8 +48,15 @@ func (srv *BlockService) GetBlock(r *http.Request, args *GetBlockArgs, reply *Ge
 	if err != nil {
 		return err
 	}
-	reply.PreviousBlockHash = block.PreviousBlockHash
-	reply.MerkleRootHash = block.MerkleRootHash
+	nextblock, err := env.DB.GetNextBlock(hash)
+	if err != nil {
+		return err
+	}
+	if nextblock != nil {
+		reply.NextBlockHash = hex.EncodeToString(nextblock.Hash())
+	}
+	reply.PreviousBlockHash = hex.EncodeToString(block.PreviousBlockHash)
+	reply.MerkleRootHash = hex.EncodeToString(block.MerkleRootHash)
 	reply.Timestamp = block.Timestamp
 	reply.Bits = block.Bits
 	reply.Nonce = block.Nonce

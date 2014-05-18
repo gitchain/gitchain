@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -154,8 +153,8 @@ func main() {
 			fmt.Printf("Can't get a block because of %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Previous block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %#x\nNonce: %v\nTransactions: %d\n",
-			hex.EncodeToString(resp.PreviousBlockHash), hex.EncodeToString(resp.MerkleRootHash),
+		fmt.Printf("Previous block hash: %v\nNext block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %#x\nNonce: %v\nTransactions: %d\n",
+			resp.PreviousBlockHash, resp.NextBlockHash, resp.MerkleRootHash,
 			time.Unix(resp.Timestamp, 0).String(), resp.Bits, resp.Nonce, resp.NumTransactions)
 	case "Transactions":
 		if len(flag.Args()) < 2 {

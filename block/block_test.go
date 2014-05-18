@@ -43,6 +43,18 @@ func TestNewBlockSingleTx(t *testing.T) {
 	assert.NotEqual(t, block1.MerkleRootHash, types.EmptyHash())
 }
 
+func TestNewBlockNoTx(t *testing.T) {
+	transactions := []trans.T{}
+	block1, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+	}
+
+	assert.Equal(t, transactions, block1.Transactions)
+	assert.Equal(t, block1.MerkleRootHash, types.EmptyHash())
+}
+
 func TestEncodeDecode(t *testing.T) {
 	privateKey := generateKey(t)
 	txn1, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
@@ -50,6 +62,26 @@ func TestEncodeDecode(t *testing.T) {
 	txn3, _ := trans.NewNameDeallocation("my-new-repository", privateKey)
 
 	transactions := []trans.T{txn1, txn2, txn3}
+	block, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+	}
+
+	enc, err := block.Encode()
+	if err != nil {
+		t.Errorf("error while encoding block: %v", err)
+	}
+
+	block1, err := Decode(enc)
+	if err != nil {
+		t.Errorf("error while encoding block: %v", err)
+	}
+
+	assert.Equal(t, block, block1, "encoded and decoded block should be identical to the original one")
+}
+
+func TestEncodeDecodeEmptyBlock(t *testing.T) {
+	transactions := []trans.T{}
 	block, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 	if err != nil {
 		t.Errorf("can't create a block because of %v", err)

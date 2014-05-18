@@ -105,6 +105,9 @@ func Decode(encoded []byte) (*Block, error) {
 	buf := bytes.NewBuffer(encoded)
 	enc := gob.NewDecoder(buf)
 	err := enc.Decode(&blk)
+	if blk.Transactions == nil {
+		blk.Transactions = []trans.T{}
+	}
 	return &blk, err
 }
 

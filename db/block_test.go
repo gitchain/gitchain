@@ -11,13 +11,9 @@ import (
 )
 
 func TestPutGetBlock(t *testing.T) {
-	privateKey := generateECDSAKey(t)
-	txn1, rand := transaction.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn2, _ := transaction.NewNameAllocation("my-new-repository", rand, privateKey)
-	txn3, _ := transaction.NewNameDeallocation("my-new-repository", privateKey)
+	transactions := fixtureSampleTransactions(t)
 
-	transactions := []transaction.T{txn1, txn2, txn3}
-	block, err := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
+	blk, err := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
 	if err != nil {
 		t.Errorf("can't create a block because of %v", err)
 	}
@@ -28,18 +24,18 @@ func TestPutGetBlock(t *testing.T) {
 	if err != nil {
 		t.Errorf("error opening database: %v", err)
 	}
-	err = db.PutBlock(block, false)
+	err = db.PutBlock(blk, false)
 	if err != nil {
 		t.Errorf("error putting block: %v", err)
 	}
-	block1, err := db.GetBlock(block.Hash())
+	block1, err := db.GetBlock(blk.Hash())
 	if err != nil {
 		t.Errorf("error getting block: %v", err)
 	}
 	if block1 == nil {
-		t.Errorf("error getting block %v", block.Hash())
+		t.Errorf("error getting block %v", blk.Hash())
 	}
-	assert.Equal(t, block, block1)
+	assert.Equal(t, blk, block1)
 
 	// Attempt fetching the last one
 	block1, err = db.GetLastBlock()
@@ -51,7 +47,7 @@ func TestPutGetBlock(t *testing.T) {
 	}
 
 	// Set the last one
-	err = db.PutBlock(block, true)
+	err = db.PutBlock(blk, true)
 	if err != nil {
 		t.Errorf("error putting block: %v", err)
 	}
@@ -62,5 +58,49 @@ func TestPutGetBlock(t *testing.T) {
 	if block1 == nil {
 		t.Errorf("error getting block, there should be a last block")
 	}
-	assert.Equal(t, block, block1)
+	assert.Equal(t, blk, block1)
+}
+
+func TestGetNextBlock(t *testing.T) {
+	transactions := fixtureSampleTransactions(t)
+
+	blk, err := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+	}
+
+	blk1, err := block.NewBlock(blk.Hash(), block.HIGHEST_TARGET, []transaction.T{})
+	if err != nil {
+		t.Errorf("can't create a block because of %v", err)
+	}
+
+	db, err := NewDB("test.db")
+	defer os.Remove("test.db")
+
+	if err != nil {
+		t.Errorf("error opening database: %v", err)
+	}
+
+	err = db.PutBlock(blk, false)
+	if err != nil {
+		t.Errorf("error putting block: %v", err)
+	}
+
+	blk_, err := db.GetNextBlock(types.EmptyHash())
+	if err != nil {
+		t.Errorf("error getting next block: %v", err)
+	}
+	assert.Equal(t, blk, blk_)
+
+	err = db.PutBlock(blk1, false)
+	if err != nil {
+		t.Errorf("error putting block: %v", err)
+	}
+
+	blk1_, err := db.GetNextBlock(blk.Hash())
+	if err != nil {
+		t.Errorf("error getting next block: %v", err)
+	}
+	assert.Equal(t, blk1_, blk1)
+
 }
