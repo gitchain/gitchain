@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"log"
+	"time"
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/env"
@@ -98,7 +99,7 @@ loop:
 			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
 		goto initPool
-	default:
+	case <-time.After(time.Second * 1):
 		if key, _ := env.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil {
 			// if there are no transactions to be included into a block, try mining an empty/BAT-only block
 			if blk, _ = env.DB.GetLastBlock(); blk == nil {
