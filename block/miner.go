@@ -11,8 +11,10 @@ import (
 )
 
 func (b *Block) Mine(c chan *Block) {
-	ch := make(chan *Block)
-	router.PermanentSubscribe("/block/last", ch)
+	lastch := make(chan *Block)
+	router.PermanentSubscribe("/block/last", lastch)
+	blockch := make(chan *Block)
+	router.PermanentSubscribe("/block", lastch)
 	target := targetFromBits(b.Bits)
 	i := big.NewInt(int64(0))
 	var n uint32
@@ -23,10 +25,18 @@ func (b *Block) Mine(c chan *Block) {
 loop:
 	for n = 0; n < 4294967295; n++ {
 		select {
-		case last := <-ch:
+		case last := <-lastch:
 			b.PreviousBlockHash = last.Hash()
 			b.Timestamp = time.Now().UTC().Unix()
 			goto loop
+		case ablock := <-blockch:
+			for i := range ablock.Transactions {
+				for j := range b.Transactions {
+					if bytes.Compare(ablock.Transactions[i].Hash(), b.Transactions[j].Hash()) == 0 {
+						b.Transactions = append(b.Transactions[0:j-1], b.Transactions[j+1:]...)
+					}
+				}
+			}
 		default:
 			binary.Write(buf, binary.LittleEndian, b.PreviousBlockHash)
 			binary.Write(buf, binary.LittleEndian, b.MerkleRootHash)
