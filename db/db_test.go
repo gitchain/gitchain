@@ -6,15 +6,23 @@ import (
 
 	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/transaction"
+	"github.com/gitchain/gitchain/types"
 )
 
-func fixtureSampleTransactions(t *testing.T) []transaction.T {
+func fixtureSampleTransactions(t *testing.T) ([]*transaction.Envelope, *ecdsa.PrivateKey) {
 	privateKey := generateECDSAKey(t)
-	txn1, rand := transaction.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn2, _ := transaction.NewNameAllocation("my-new-repository", rand, privateKey)
-	txn3, _ := transaction.NewNameDeallocation("my-new-repository", privateKey)
+	txn1, rand := transaction.NewNameReservation("my-new-repository")
+	txn1e := transaction.NewEnvelope(types.EmptyHash(), txn1)
+	txn2, _ := transaction.NewNameAllocation("my-new-repository", rand)
+	txn2e := transaction.NewEnvelope(txn1.Hash(), txn2)
+	txn3, _ := transaction.NewNameDeallocation("my-new-repository")
+	txn3e := transaction.NewEnvelope(txn2.Hash(), txn3)
 
-	return []transaction.T{txn1, txn2, txn3}
+	txn1e.Sign(privateKey)
+	txn2e.Sign(privateKey)
+	txn3e.Sign(privateKey)
+
+	return []*transaction.Envelope{txn1e, txn2e, txn3e}, privateKey
 }
 
 func generateECDSAKey(t *testing.T) *ecdsa.PrivateKey {

@@ -57,6 +57,16 @@ Every transaction on the Gitchain blockchain has a unique SHA256 hash and is the
 SampleTransaction{Value: ...}
 \end{verbatim}
 
+Every Gitchain transaction is enveloped with this structure:
+
+\begin{verbatim}
+PreviousTransaction.Hash
+ECDSASignature(PreviousTransaction.Hash, Transaction.Hash, NextPublicKey)
+PublicKey
+NextPublicKey
+\end{verbatim}
+
+
 \section{Mining}
 
 In order to maintain the blockchain, Gitchain nodes mine blocks, similarly to Bitcoin or Namecoin. However, to avoid Bitcoin miners
@@ -67,9 +77,7 @@ with optimized hardware to attempt taking over Gitchain mining, a different algo
 While a block can be mined without attribution, it is generally recommended that a miner includes the following transaction into every block it mines. It can be later used as a proof of work record to be redeemed in other transactions.
 
 \begin{verbatim}
-BlockAttribution{Signature{R,S}: ECDSASignature(
-                  Concat(ATTRIBUTE, previousBlockHash),
-                  privateKey)}
+BlockAttribution{}
 \end{verbatim}
 
 These transactions should never be broadcasted independently of a block. If a node receives an out-of-block BAT transaction, it is discarded immediately.
@@ -91,8 +99,7 @@ Similarly to Namecoin, before a name can be allocated it has to be securely rese
 
 
 \begin{verbatim}
-NameReservation(Hash: Hash(rand, name),
-                PublicKey: publicKey)
+NameReservation(Hash: Hash(rand, name))
 \end{verbatim}
 
 The motivation behind this is the same as in Namecoin, this is to prevent others from stealing your name before you had a chance to get it included and confirmed.
@@ -102,9 +109,7 @@ The motivation behind this is the same as in Namecoin, this is to prevent others
 After the corresponding NRT has matured, a name allocation can happen:
 
 \begin{verbatim}
-NameAllocation(Name: name, Rand: rand,
-               Signature{R,S}: ECDSAsignature(Concat(ALLOCATE, name),
-                          privateKey))
+NameAllocation(Name: name, Rand: rand)
 \end{verbatim}
 
 Name allocation is considered mature after 12 confirmations.
@@ -114,12 +119,8 @@ Name allocation is considered mature after 12 confirmations.
 After the NAT has matured, one can deallocate the corresponding name.
 
 \begin{verbatim}
-NameDeallocation(Name: name,
-                 Signature{R,S}: ECDSAsignature(Concat(DEALLOCATE,name),
-                                         privateKey))
+NameDeallocation(Name: name)
 \end{verbatim}
-
-Signing concatenated string of a DEALLOCATE verb and a name itself prevents others from replaying any previous signatures, should they have been done on the name itself.
 
 \section{Permission Management}
 

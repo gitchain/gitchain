@@ -39,10 +39,27 @@ func (db *T) PutBlock(b *block.Block, last bool) error {
 	}
 
 	for i := range b.Transactions {
-		err = bucket.Put(b.Transactions[i].Hash(), b.Hash())
+		// transaction -> block mapping
+		err = bucket.Put(append([]byte("T"), b.Transactions[i].Transaction.Hash()...), b.Hash())
 		if err != nil {
 			return err
 		}
+		// link next transactions
+		err = bucket.Put(append([]byte(">"), b.Transactions[i].PreviousTransactionHash...), b.Transactions[i].Transaction.Hash())
+		if err != nil {
+			return err
+		}
+		// update "unspendable key"
+		err = bucket.Delete(append([]byte("<"), b.Transactions[i].PublicKey...))
+		if err != nil {
+			return err
+		}
+		// update "spendable key", has to happen after updating the "unspendable" one as it might be the same one
+		err = bucket.Put(append([]byte("<"), b.Transactions[i].NextPublicKey...), b.Transactions[i].Transaction.Hash())
+		if err != nil {
+			return err
+		}
+
 	}
 
 	if last {

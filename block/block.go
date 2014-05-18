@@ -33,7 +33,7 @@ type Block struct {
 	Timestamp         int64
 	Bits              uint32
 	Nonce             uint32
-	Transactions      []trans.T
+	Transactions      []*trans.Envelope
 }
 
 func init() {
@@ -63,7 +63,7 @@ func (b *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hex.EncodeToString(b.Hash()))
 }
 
-func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []trans.T) (*Block, error) {
+func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []*trans.Envelope) (*Block, error) {
 	encodedTransactions := make([][]byte, len(transactions))
 	for i := range transactions {
 		t, _ := transactions[i].Encode()
@@ -106,7 +106,7 @@ func Decode(encoded []byte) (*Block, error) {
 	enc := gob.NewDecoder(buf)
 	err := enc.Decode(&blk)
 	if blk.Transactions == nil {
-		blk.Transactions = []trans.T{}
+		blk.Transactions = []*trans.Envelope{}
 	}
 	return &blk, err
 }

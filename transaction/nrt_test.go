@@ -1,14 +1,14 @@
 package transaction
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewReservation(t *testing.T) {
-	privateKey := generateKey(t)
-	txn, rand := NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn1, rand1 := NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn, rand := NewNameReservation("my-new-repository")
+	txn1, rand1 := NewNameReservation("my-new-repository")
 	assert.NotEqual(t, txn.Hashed, txn1.Hashed, "hashed value should not be equal")
 	assert.NotEqual(t, rand, rand1, "random numbers should not be equal")
 
@@ -20,8 +20,7 @@ func TestNewReservation(t *testing.T) {
 }
 
 func TestReservationEncodingDecoding(t *testing.T) {
-	privateKey := generateKey(t)
-	txn, _ := NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn, _ := NewNameReservation("my-new-repository")
 
 	testTransactionEncodingDecoding(t, txn)
 }

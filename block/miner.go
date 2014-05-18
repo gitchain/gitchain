@@ -32,7 +32,7 @@ loop:
 		case ablock := <-blockch:
 			for i := range ablock.Transactions {
 				for j := range b.Transactions {
-					if bytes.Compare(ablock.Transactions[i].Hash(), b.Transactions[j].Hash()) == 0 {
+					if bytes.Compare(ablock.Transactions[i].Transaction.Hash(), b.Transactions[j].Transaction.Hash()) == 0 {
 						b.Transactions = append(b.Transactions[0:j-1], b.Transactions[j+1:]...)
 					}
 				}

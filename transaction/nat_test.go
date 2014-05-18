@@ -1,23 +1,18 @@
 package transaction
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewAllocation(t *testing.T) {
-	privateKey := generateKey(t)
-	_, rand := NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn, err := NewNameAllocation("my-new-repository", rand, privateKey)
+	_, rand := NewNameReservation("my-new-repository")
+	txn, err := NewNameAllocation("my-new-repository", rand)
 
 	if err != nil {
 		t.Errorf("error while creating name allocation transaction: %v", err)
 	}
-
-	assert.True(t, txn.Verify(&privateKey.PublicKey))
-
-	txn.Name = "my-old-repository"
-	assert.False(t, txn.Verify(&privateKey.PublicKey))
 
 	assert.True(t, txn.Valid())
 	txn1 := txn
@@ -36,9 +31,8 @@ func TestNewAllocation(t *testing.T) {
 }
 
 func TestAllocationEncodingDecoding(t *testing.T) {
-	privateKey := generateKey(t)
-	_, rand := NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn, _ := NewNameAllocation("my-new-repository", rand, privateKey)
+	_, rand := NewNameReservation("my-new-repository")
+	txn, _ := NewNameAllocation("my-new-repository", rand)
 
 	testTransactionEncodingDecoding(t, txn)
 }

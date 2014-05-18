@@ -7,7 +7,6 @@ import (
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/env"
-	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/repository"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
@@ -16,13 +15,12 @@ import (
 
 const RESERVATION_CONFIRMATIONS_REQUIRED = 3
 
-func isValidReservation(tx transaction.T, alloc *transaction.NameAllocation) bool {
-	switch tx.(type) {
+func isValidReservation(reservation *transaction.Envelope, alloc *transaction.Envelope) bool {
+	allocT := alloc.Transaction.(*transaction.NameAllocation)
+	switch reservation.Transaction.(type) {
 	case *transaction.NameReservation:
-		tx1 := tx.(*transaction.NameReservation)
-		pubkey, _ := keys.DecodeECDSAPublicKey(tx1.PublicKey) // FIXME: what to do with this err
-		return bytes.Compare(util.SHA256(append(alloc.Rand, []byte(alloc.Name)...)), tx1.Hashed) == 0 &&
-			alloc.Verify(pubkey)
+		tx1 := reservation.Transaction.(*transaction.NameReservation)
+		return bytes.Compare(util.SHA256(append(allocT.Rand, []byte(allocT.Name)...)), tx1.Hashed) == 0
 	default:
 		return false
 	}
@@ -35,7 +33,8 @@ loop:
 	select {
 	case blk := <-ch:
 		for i := range blk.Transactions {
-			tx := blk.Transactions[i]
+			tx0 := blk.Transactions[i]
+			tx := tx0.Transaction
 			switch tx.(type) {
 			case *transaction.NameAllocation:
 				tx1 := tx.(*transaction.NameAllocation)
@@ -53,8 +52,8 @@ loop:
 					}
 					for curBlock != nil {
 						for i := range curBlock.Transactions {
-							if isValidReservation(curBlock.Transactions[i], tx1) {
-								reservationTx = curBlock.Transactions[i].(*transaction.NameReservation)
+							if isValidReservation(curBlock.Transactions[i], tx0) {
+								reservationTx = curBlock.Transactions[i].Transaction.(*transaction.NameReservation)
 							}
 						}
 
@@ -73,8 +72,8 @@ loop:
 						break
 					}
 					for i := range blk.Transactions {
-						if isValidReservation(blk.Transactions[i], tx1) {
-							reservationTx = blk.Transactions[i].(*transaction.NameReservation)
+						if isValidReservation(blk.Transactions[i], tx0) {
+							reservationTx = blk.Transactions[i].Transaction.(*transaction.NameReservation)
 						}
 					}
 

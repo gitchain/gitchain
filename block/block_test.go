@@ -12,11 +12,18 @@ import (
 
 func TestNewBlock(t *testing.T) {
 	privateKey := generateKey(t)
-	txn1, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn2, _ := trans.NewNameAllocation("my-new-repository", rand, privateKey)
-	txn3, _ := trans.NewNameDeallocation("my-new-repository", privateKey)
+	txn1, rand := trans.NewNameReservation("my-new-repository")
+	txn1e := trans.NewEnvelope(types.EmptyHash(), txn1)
+	txn2, _ := trans.NewNameAllocation("my-new-repository", rand)
+	txn2e := trans.NewEnvelope(types.EmptyHash(), txn2)
+	txn3, _ := trans.NewNameDeallocation("my-new-repository")
+	txn3e := trans.NewEnvelope(types.EmptyHash(), txn3)
 
-	transactions := []trans.T{txn1, txn2, txn3}
+	txn1e.Sign(privateKey)
+	txn2e.Sign(privateKey)
+	txn3e.Sign(privateKey)
+
+	transactions := []*trans.Envelope{txn1e, txn2e, txn3e}
 	block1, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 
 	if err != nil {
@@ -29,9 +36,11 @@ func TestNewBlock(t *testing.T) {
 
 func TestNewBlockSingleTx(t *testing.T) {
 	privateKey := generateKey(t)
-	txn1, _ := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
+	txn1, _ := trans.NewNameReservation("my-new-repository")
+	txn1e := trans.NewEnvelope(types.EmptyHash(), txn1)
+	txn1e.Sign(privateKey)
 
-	transactions := []trans.T{txn1}
+	transactions := []*trans.Envelope{txn1e}
 	block1, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 
 	if err != nil {
@@ -44,7 +53,7 @@ func TestNewBlockSingleTx(t *testing.T) {
 }
 
 func TestNewBlockNoTx(t *testing.T) {
-	transactions := []trans.T{}
+	transactions := []*trans.Envelope{}
 	block1, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 
 	if err != nil {
@@ -57,11 +66,18 @@ func TestNewBlockNoTx(t *testing.T) {
 
 func TestEncodeDecode(t *testing.T) {
 	privateKey := generateKey(t)
-	txn1, rand := trans.NewNameReservation("my-new-repository", &privateKey.PublicKey)
-	txn2, _ := trans.NewNameAllocation("my-new-repository", rand, privateKey)
-	txn3, _ := trans.NewNameDeallocation("my-new-repository", privateKey)
+	txn1, rand := trans.NewNameReservation("my-new-repository")
+	txn1e := trans.NewEnvelope(types.EmptyHash(), txn1)
+	txn2, _ := trans.NewNameAllocation("my-new-repository", rand)
+	txn2e := trans.NewEnvelope(types.EmptyHash(), txn2)
+	txn3, _ := trans.NewNameDeallocation("my-new-repository")
+	txn3e := trans.NewEnvelope(types.EmptyHash(), txn3)
 
-	transactions := []trans.T{txn1, txn2, txn3}
+	txn1e.Sign(privateKey)
+	txn2e.Sign(privateKey)
+	txn3e.Sign(privateKey)
+
+	transactions := []*trans.Envelope{txn1e, txn2e, txn3e}
 	block, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 	if err != nil {
 		t.Errorf("can't create a block because of %v", err)
@@ -81,7 +97,7 @@ func TestEncodeDecode(t *testing.T) {
 }
 
 func TestEncodeDecodeEmptyBlock(t *testing.T) {
-	transactions := []trans.T{}
+	transactions := []*trans.Envelope{}
 	block, err := NewBlock(types.EmptyHash(), HIGHEST_TARGET, transactions)
 	if err != nil {
 		t.Errorf("can't create a block because of %v", err)

@@ -11,17 +11,23 @@ import (
 	"github.com/gitchain/gitchain/types"
 )
 
-func prepareBAT() transaction.T {
+func prepareBAT() *transaction.Envelope {
 	key, err := env.DB.GetMainKey()
 	if err != nil {
 		log.Printf("Error while attempting to retrieve main key: %v", err)
 	}
 	if key != nil {
-		bat, err := transaction.NewBlockAttribution(key)
+		bat, err := transaction.NewBlockAttribution()
 		if err != nil {
 			log.Printf("Error while creating a BAT: %v", err)
 		} else {
-			return bat
+			hash, err := env.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
+			if err != nil {
+				log.Printf("Error while creating a BAT: %v", err)
+			}
+			bate := transaction.NewEnvelope(hash, bat)
+			bate.Sign(key)
+			return bate
 		}
 	}
 	return nil
@@ -33,21 +39,29 @@ func targetBits() uint32 {
 }
 
 func TransactionListener() {
-	var msg transaction.T
+	var msg *transaction.Envelope
 	var blk *block.Block
 	blockChannel := make(chan *block.Block)
-	var transactionsPool []transaction.T
+	var transactionsPool []*transaction.Envelope
 	var previousBlockHash types.Hash
-	var ch chan transaction.T = make(chan transaction.T)
+	ch := make(chan *transaction.Envelope)
 	router.PermanentSubscribe("/transaction", ch)
 
 	miningEmpty := false
 
 initPool:
-	transactionsPool = make([]transaction.T, 0)
+	transactionsPool = make([]*transaction.Envelope, 0)
 loop:
 	select {
 	case msg = <-ch:
+		verification, err := msg.Verify()
+		if err != nil {
+			log.Printf("error during transaction verification: %v", err)
+		}
+		if !verification {
+			// discard transaction
+			goto loop
+		}
 		miningEmpty = false
 		transactionsPool = append(transactionsPool, msg)
 		if blk, _ = env.DB.GetLastBlock(); blk == nil {

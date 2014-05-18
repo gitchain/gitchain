@@ -11,7 +11,7 @@ import (
 )
 
 func TestPutGetBlock(t *testing.T) {
-	transactions := fixtureSampleTransactions(t)
+	transactions, _ := fixtureSampleTransactions(t)
 
 	blk, err := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
 	if err != nil {
@@ -62,14 +62,14 @@ func TestPutGetBlock(t *testing.T) {
 }
 
 func TestGetNextBlock(t *testing.T) {
-	transactions := fixtureSampleTransactions(t)
+	transactions, _ := fixtureSampleTransactions(t)
 
 	blk, err := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
 	if err != nil {
 		t.Errorf("can't create a block because of %v", err)
 	}
 
-	blk1, err := block.NewBlock(blk.Hash(), block.HIGHEST_TARGET, []transaction.T{})
+	blk1, err := block.NewBlock(blk.Hash(), block.HIGHEST_TARGET, []*transaction.Envelope{})
 	if err != nil {
 		t.Errorf("can't create a block because of %v", err)
 	}

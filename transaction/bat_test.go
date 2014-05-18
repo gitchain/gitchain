@@ -1,21 +1,17 @@
 package transaction
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewAttribution(t *testing.T) {
-	privateKey := generateKey(t)
-	txn, err := NewBlockAttribution(privateKey)
+	txn, err := NewBlockAttribution()
 
 	if err != nil {
 		t.Errorf("error while creating name allocation transaction: %v", err)
 	}
-
-	assert.True(t, txn.Verify(&privateKey.PublicKey))
-	txn.SignatureR = []byte("boom")
-	assert.False(t, txn.Verify(&privateKey.PublicKey))
 
 	assert.True(t, txn.Valid())
 	txn1 := txn
@@ -25,7 +21,6 @@ func TestNewAttribution(t *testing.T) {
 }
 
 func TestAttributionEncodingDecoding(t *testing.T) {
-	privateKey := generateKey(t)
-	txn, _ := NewBlockAttribution(privateKey)
+	txn, _ := NewBlockAttribution()
 	testTransactionEncodingDecoding(t, txn)
 }

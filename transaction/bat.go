@@ -1,15 +1,7 @@
 //// Block Allocation Transaction (BAT)
 package transaction
 
-import (
-	"bytes"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/sha1"
-	"encoding/binary"
-	"encoding/gob"
-	"math/big"
-)
+import "encoding/gob"
 
 func init() {
 	gob.Register(&BlockAttribution{})
@@ -22,34 +14,16 @@ const (
 )
 
 type BlockAttribution struct {
-	Version    uint32
-	SignatureR []byte
-	SignatureS []byte
+	Version uint32
 }
 
-func NewBlockAttribution(privateKey *ecdsa.PrivateKey) (txn *BlockAttribution, err error) {
-	buf := bytes.NewBuffer([]byte{})
-	binary.Write(buf, binary.LittleEndian, sha1.Sum([]byte("ATTRIBUTE")))
-	sigR, sigS, err := ecdsa.Sign(rand.Reader, privateKey, buf.Bytes())
+func NewBlockAttribution() (*BlockAttribution, error) {
 	return &BlockAttribution{
-			Version:    BLOCK_ATTRIBUTION_VERSION,
-			SignatureR: sigR.Bytes(),
-			SignatureS: sigS.Bytes()},
-		err
+		Version: BLOCK_ATTRIBUTION_VERSION}, nil
 }
 
 func (txn *BlockAttribution) Valid() bool {
 	return (txn.Version == BLOCK_ATTRIBUTION_VERSION)
-}
-
-func (txn *BlockAttribution) Verify(publicKey *ecdsa.PublicKey) bool {
-	buf := bytes.NewBuffer([]byte{})
-	binary.Write(buf, binary.LittleEndian, sha1.Sum([]byte("ATTRIBUTE")))
-	r := new(big.Int)
-	s := new(big.Int)
-	r.SetBytes(txn.SignatureR)
-	s.SetBytes(txn.SignatureS)
-	return ecdsa.Verify(publicKey, buf.Bytes(), r, s)
 }
 
 func (txn *BlockAttribution) Encode() ([]byte, error) {
