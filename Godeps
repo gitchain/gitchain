@@ -38,6 +38,10 @@
 			"Rev": "5aafac3c0ea7bad725a9f1a546f17091aa61151f"
 		},
 		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Rev": "10a95d14a3a215f5e2045d3dbbcd29f1ab209586"
+		},
+		{
 			"ImportPath": "github.com/tv42/base58",
 			"Rev": "9d8d9aec618d081c2605406bf8a2fd0528ae59d6"
 		},
