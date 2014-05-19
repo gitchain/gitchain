@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bargez/pktline"
+	"github.com/gitchain/gitchain/git"
 	"github.com/gitchain/gitchain/repository"
 	"github.com/gorilla/mux"
 )
@@ -17,7 +18,18 @@ func setupGitRoutes(r *mux.Router) {
 	})
 
 	r.Methods("POST").Path("/{path:.+}/git-receive-pack").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		resp.WriteHeader(200)
+		var lines [][]byte
+		dec := pktline.NewDecoder(req.Body)
+		dec.DecodeUntilFlush(&lines)
+
+		_, err := git.ReadPackfile(req.Body)
+		if err != nil {
+			log.Printf("error while reading packfile: %v", err)
+			resp.WriteHeader(500)
+		} else {
+			resp.Header().Add("Cache-Control", "no-cache")
+			resp.WriteHeader(200)
+		}
 	})
 
 	r.Methods("GET").Path("/{path:.+}/info/refs").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
