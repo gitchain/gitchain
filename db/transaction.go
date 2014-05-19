@@ -61,7 +61,7 @@ func (db *T) GetTransactionConfirmations(hash []byte) (int, error) {
 	}
 }
 
-func (db *T) GetPreviousTransactionHashForPublicKey(publicKey *ecdsa.PublicKey) (types.Hash, error) {
+func (db *T) GetPreviousEnvelopeHashForPublicKey(publicKey *ecdsa.PublicKey) (types.Hash, error) {
 	enc, err := keys.EncodeECDSAPublicKey(publicKey)
 	if err != nil {
 		return nil, err

@@ -33,7 +33,7 @@ func (NameService) NameReservation(r *http.Request, args *NameReservationArgs, r
 	}
 	tx, random := transaction.NewNameReservation(args.Name)
 
-	hash, err := srv.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
+	hash, err := srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
 	if err != nil {
 		log.Printf("Error while preparing transaction: %v", err)
 	}
@@ -76,7 +76,7 @@ func (NameService) NameAllocation(r *http.Request, args *NameAllocationArgs, rep
 		return err
 	}
 
-	hash, err := srv.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
+	hash, err := srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
 	if err != nil {
 		log.Printf("Error while preparing transaction: %v", err)
 	}

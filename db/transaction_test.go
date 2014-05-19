@@ -84,7 +84,7 @@ func TestTransactionConfirmations(t *testing.T) {
 
 }
 
-func TestGetPreviousTransactionHashForPublicKey(t *testing.T) {
+func TestGetPreviousEnvelopeHashForPublicKey(t *testing.T) {
 	transactions, _ := fixtureSampleTransactions(t)
 
 	block, err := block.NewBlock(types.EmptyHash(), block.HIGHEST_TARGET, transactions)
@@ -107,7 +107,7 @@ func TestGetPreviousTransactionHashForPublicKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("error decoding ECDSA pubkey: %v", err)
 	}
-	tx, err := db.GetPreviousTransactionHashForPublicKey(dec)
+	tx, err := db.GetPreviousEnvelopeHashForPublicKey(dec)
 	if err != nil {
 		t.Errorf("error getting previous transaction's for a pubkey: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestGetPreviousTransactionHashForPublicKey(t *testing.T) {
 
 	privateKey := generateECDSAKey(t)
 
-	tx, err = db.GetPreviousTransactionHashForPublicKey(&privateKey.PublicKey)
+	tx, err = db.GetPreviousEnvelopeHashForPublicKey(&privateKey.PublicKey)
 	if err != nil {
 		t.Errorf("error getting previous transaction's for a pubkey: %v", err)
 	}

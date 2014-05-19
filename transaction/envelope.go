@@ -13,18 +13,18 @@ import (
 )
 
 type Envelope struct {
-	PreviousTransactionHash types.Hash
-	SignatureR              []byte
-	SignatureS              []byte
-	PublicKey               []byte
-	NextPublicKey           []byte
-	Transaction             T
+	PreviousEnvelopeHash types.Hash
+	SignatureR           []byte
+	SignatureS           []byte
+	PublicKey            []byte
+	NextPublicKey        []byte
+	Transaction          T
 }
 
 func NewEnvelope(prev types.Hash, txn T, args ...[]byte) *Envelope {
 	e := &Envelope{
-		PreviousTransactionHash: prev,
-		Transaction:             txn}
+		PreviousEnvelopeHash: prev,
+		Transaction:          txn}
 	if len(args) == 1 {
 		e.PublicKey = args[0]
 		e.NextPublicKey = args[0]
@@ -33,7 +33,7 @@ func NewEnvelope(prev types.Hash, txn T, args ...[]byte) *Envelope {
 }
 
 func (e *Envelope) Hash() []byte {
-	return util.SHA256(append(append(e.Transaction.Hash(), e.PreviousTransactionHash...), e.NextPublicKey...))
+	return util.SHA256(append(append(e.Transaction.Hash(), e.PreviousEnvelopeHash...), e.NextPublicKey...))
 }
 
 func (e *Envelope) Sign(privateKey *ecdsa.PrivateKey) error {

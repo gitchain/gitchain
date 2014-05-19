@@ -21,7 +21,7 @@ func prepareBAT(srv *T) *transaction.Envelope {
 		if err != nil {
 			log.Printf("Error while creating a BAT: %v", err)
 		} else {
-			hash, err := srv.DB.GetPreviousTransactionHashForPublicKey(&key.PublicKey)
+			hash, err := srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
 			if err != nil {
 				log.Printf("Error while creating a BAT: %v", err)
 			}

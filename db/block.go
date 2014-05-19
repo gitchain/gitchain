@@ -45,7 +45,7 @@ func (db *T) PutBlock(b *block.Block, last bool) error {
 			return err
 		}
 		// link next transactions
-		err = bucket.Put(append([]byte(">"), b.Transactions[i].PreviousTransactionHash...), b.Transactions[i].Hash())
+		err = bucket.Put(append([]byte(">"), b.Transactions[i].PreviousEnvelopeHash...), b.Transactions[i].Hash())
 		if err != nil {
 			return err
 		}
