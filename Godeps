@@ -8,6 +8,10 @@
 			"Rev": "23b39e4e860172e1983ded00a9d2f7e42b7683d0"
 		},
 		{
+			"ImportPath": "github.com/bargez/pktline",
+			"Rev": "80bbaca5dd86a8ec7e19adb916605a264fbe3af2"
+		},
+		{
 			"ImportPath": "github.com/boltdb/bolt",
 			"Comment": "data/v1-88-g417b0b7",
 			"Rev": "417b0b7bf69569597e126fcf920176942dcf427a"
