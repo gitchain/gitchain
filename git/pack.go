@@ -11,18 +11,9 @@ import (
 	"io/ioutil"
 )
 
-const (
-	OBJ_COMMIT    = 1
-	OBJ_TREE      = 2
-	OBJ_BLOB      = 3
-	OBJ_TAG       = 4
-	OBJ_OFS_DELTA = 6
-	OBJ_REF_DELTA = 7
-)
-
 type Packfile struct {
 	Version  uint32
-	Objects  [][]byte
+	Objects  []Object
 	Checksum []byte
 }
 
@@ -76,21 +67,20 @@ func readEntry(packfile *Packfile, reader flate.Reader) error {
 		delta := make([]byte, 20)
 		reader.Read(delta)
 
-		buf, err := inflate(reader, int(sz))
+		_, err := inflate(reader, int(sz))
 		if err != nil {
 			return err
 		}
-		packfile.Objects = append(packfile.Objects, buf)
+		// packfile.Objects = append(packfile.Objects, buf)
 	case OBJ_OFS_DELTA:
 		if (b & 0x80) != 0 {
 			sz += readMSBEncodedSize(reader, 4)
 		}
-		buf, err := inflate(reader, int(sz))
+		_, err := inflate(reader, int(sz))
 		if err != nil {
 			return err
 		}
-		packfile.Objects = append(packfile.Objects, buf)
-		fmt.Println(string(buf))
+		// packfile.Objects = append(packfile.Objects, buf)
 	case OBJ_COMMIT, OBJ_TREE, OBJ_BLOB, OBJ_TAG:
 		if (b & 0x80) != 0 {
 			sz += readMSBEncodedSize(reader, 4)
@@ -99,8 +89,18 @@ func readEntry(packfile *Packfile, reader flate.Reader) error {
 		if err != nil {
 			return err
 		}
-		//
-		packfile.Objects = append(packfile.Objects, buf)
+		var obj Object
+		switch typ {
+		case OBJ_COMMIT:
+			obj = &Commit{Content: buf}
+		case OBJ_TREE:
+			obj = &Tree{Content: buf}
+		case OBJ_BLOB:
+			obj = &Blob{Content: buf}
+		case OBJ_TAG:
+			obj = &Tag{Content: buf}
+		}
+		packfile.Objects = append(packfile.Objects, obj)
 	default:
 		return errors.New(fmt.Sprintf("Invalid git object tag %03b", typ))
 	}
