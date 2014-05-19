@@ -143,6 +143,10 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 	return packfile, nil
 }
 
+// This byte-counting hack is here to work around the fact that both zlib
+// and flate use bufio and are very eager to read more data that they need.
+// The counter in this reader allows us to know the length of the header +
+// packed data read and therefore readjust the offset
 type packEntryReader struct {
 	Counter int
 	reader  io.Reader
