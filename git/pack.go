@@ -134,15 +134,6 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 			return packfile, err
 		}
 
-		// retry
-		// content1 := content[0 : peReader.Counter]
-		// peReader1 := &packEntryReader{reader: bytes.NewBuffer(content1)}
-		// err1 := readEntry(packfile, peReader1)
-		// if err1 != nil {
-		// 	return packfile, err1
-		// }
-		//
-
 		offset += peReader.Counter + 4
 		content = content[peReader.Counter+4:]
 
