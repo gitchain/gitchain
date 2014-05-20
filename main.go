@@ -36,13 +36,14 @@ func jsonrpc(method string, req, res interface{}) error {
 }
 
 func main() {
-	switch flag.Arg(0) {
+	args := os.Args[1:]
+	switch args[0] {
 	case "GeneratePrivateKey":
-		if len(flag.Args()) < 2 {
+		if len(args) < 2 {
 			fmt.Println("PEM file and alias required: gitchain GeneratePrivateKey <alias>")
 			os.Exit(1)
 		}
-		var alias = flag.Arg(1)
+		var alias = args[1]
 
 		var resp api.GeneratePrivateKeyReply
 		err := jsonrpc("KeyService.GeneratePrivateKey", &api.GeneratePrivateKeyArgs{Alias: alias}, &resp)
@@ -57,11 +58,11 @@ func main() {
 			os.Exit(1)
 		}
 	case "SetMainKey":
-		if len(flag.Args()) < 2 {
+		if len(args) < 2 {
 			fmt.Println("Alias required: gitchain SetMainKey <alias>")
 			os.Exit(1)
 		}
-		var alias = flag.Arg(1)
+		var alias = args[1]
 		var resp api.SetMainKeyReply
 		err := jsonrpc("KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
 		if err != nil {
@@ -98,11 +99,11 @@ func main() {
 		}
 
 	case "NameReservation":
-		if len(flag.Args()) < 3 {
+		if len(args) < 3 {
 			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name>")
 			os.Exit(1)
 		}
-		alias := flag.Arg(1)
+		alias := args[1]
 		name := flag.Arg(2)
 		var resp api.NameReservationReply
 		err := jsonrpc("NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: name}, &resp)
@@ -112,11 +113,11 @@ func main() {
 		}
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord the above transaction hash and following random number for use during allocation: %s\n", name, resp.Id, resp.Random)
 	case "NameAllocation":
-		if len(flag.Args()) < 4 {
+		if len(args) < 4 {
 			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name> <random or reservation tx hash>")
 			os.Exit(1)
 		}
-		alias := flag.Arg(1)
+		alias := args[1]
 		name := flag.Arg(2)
 		random := flag.Arg(3)
 		var resp api.NameAllocationReply
@@ -145,11 +146,11 @@ func main() {
 		}
 		fmt.Printf("%s\n", resp.Hash)
 	case "Block":
-		if len(flag.Args()) < 2 {
+		if len(args) < 2 {
 			fmt.Println("Command format required: gitchain Block <block hash>")
 			os.Exit(1)
 		}
-		hash := flag.Arg(1)
+		hash := args[1]
 		var resp api.GetBlockReply
 		err := jsonrpc("BlockService.GetBlock", &api.GetBlockArgs{Hash: hash}, &resp)
 		if err != nil {
@@ -160,11 +161,11 @@ func main() {
 			resp.PreviousBlockHash, resp.NextBlockHash, resp.MerkleRootHash,
 			time.Unix(resp.Timestamp, 0).String(), resp.Bits, resp.Nonce, resp.NumTransactions)
 	case "Transactions":
-		if len(flag.Args()) < 2 {
+		if len(args) < 2 {
 			fmt.Println("Command format required: gitchain Transactions <block hash>")
 			os.Exit(1)
 		}
-		hash := flag.Arg(1)
+		hash := args[1]
 		var resp api.BlockTransactionsReply
 		err := jsonrpc("BlockService.BlockTransactions", &api.BlockTransactionsArgs{Hash: hash}, &resp)
 		if err != nil {
@@ -175,11 +176,11 @@ func main() {
 			fmt.Println(resp.Transactions[i])
 		}
 	case "Transaction":
-		if len(flag.Args()) < 2 {
+		if len(args) < 2 {
 			fmt.Println("Command format required: gitchain Transaction <transaction hash>")
 			os.Exit(1)
 		}
-		hash := flag.Arg(1)
+		hash := args[1]
 		var resp api.GetTransactionReply
 		err := jsonrpc("TransactionService.GetTransaction", &api.GetTransactionArgs{Hash: hash}, &resp)
 		if err != nil {
