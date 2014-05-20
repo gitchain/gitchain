@@ -34,6 +34,14 @@ func (r *Packfile) ObjectByHash(hash []byte) Object {
 	return r.Objects[index]
 }
 
+func (r *Packfile) ObjectByOffset(offset int) Object {
+	index, exists := r.offsets[offset]
+	if !exists {
+		return nil
+	}
+	return r.Objects[index]
+}
+
 func (r *Packfile) PutObject(o Object) {
 	r.Objects = append(r.Objects, o)
 	r.hashes[string(o.Hash())] = len(r.Objects) - 1
@@ -75,7 +83,7 @@ func inflate(reader io.Reader, sz int) ([]byte, error) {
 	return buf, nil
 }
 
-func readEntry(packfile *Packfile, reader flate.Reader) error {
+func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 	var b, typ uint8
 	var sz uint64
 	binary.Read(reader, binary.BigEndian, &b)
@@ -110,12 +118,32 @@ func readEntry(packfile *Packfile, reader flate.Reader) error {
 		if (b & 0x80) != 0 {
 			sz += readMSBEncodedSize(reader, 4)
 		}
-		// TODO: read the negative offset
-		_, err := inflate(reader, int(sz))
+
+		// read negative offset
+		binary.Read(reader, binary.BigEndian, &b)
+		var noffset int = int(b & 0x7f)
+		for (b & 0x80) != 0 {
+			noffset += 1
+			binary.Read(reader, binary.BigEndian, &b)
+			noffset = (noffset << 7) + int(b&0x7f)
+		}
+
+		buf, err := inflate(reader, int(sz))
 		if err != nil {
 			return err
 		}
-		// packfile.Objects = append(packfile.Objects, buf)
+		referenced := packfile.ObjectByOffset(offset - noffset)
+		if referenced == nil {
+			return errors.New(fmt.Sprintf("can't find a pack entry at %d", offset-noffset))
+		} else {
+			patched := PatchDelta(referenced.Bytes(), buf)
+			if patched == nil {
+				return errors.New(fmt.Sprintf("error while patching %s", hex.EncodeToString(referenced.Hash())))
+			}
+			newObject := referenced.New()
+			newObject.SetBytes(patched)
+			packfile.PutObject(newObject)
+		}
 	case OBJ_COMMIT, OBJ_TREE, OBJ_BLOB, OBJ_TAG:
 		if (b & 0x80) != 0 {
 			sz += readMSBEncodedSize(reader, 4)
@@ -164,7 +192,7 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 
 	for i := 0; i < int(objects); i++ {
 		peReader := &packEntryReader{reader: bytes.NewBuffer(content)}
-		err := readEntry(packfile, peReader)
+		err := readEntry(packfile, peReader, offset)
 		if err != nil {
 			return packfile, err
 		}
