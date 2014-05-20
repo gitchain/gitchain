@@ -104,7 +104,7 @@ func main() {
 			os.Exit(1)
 		}
 		alias := args[1]
-		name := flag.Arg(2)
+		name := args[2]
 		var resp api.NameReservationReply
 		err := jsonrpc("NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: name}, &resp)
 		if err != nil {
@@ -118,8 +118,8 @@ func main() {
 			os.Exit(1)
 		}
 		alias := args[1]
-		name := flag.Arg(2)
-		random := flag.Arg(3)
+		name := args[2]
+		random := args[3]
 		var resp api.NameAllocationReply
 		err := jsonrpc("NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: name, Random: random}, &resp)
 		if err != nil {
