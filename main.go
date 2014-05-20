@@ -206,8 +206,9 @@ func main() {
 			log.Printf("Error during server initialization: %v", err)
 			os.Exit(1)
 		}
-		go server.MiningFactory(srv)
 		go server.NameRegistrar(srv)
+		go server.RepositoryServer(srv)
+		go server.MiningFactory(srv)
 		go server.TransactionListener(srv)
 		api.Start(srv)
 	}
