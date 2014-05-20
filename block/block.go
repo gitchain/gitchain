@@ -60,7 +60,16 @@ func (b *Block) Hash() []byte {
 }
 
 func (b *Block) MarshalJSON() ([]byte, error) {
-	return json.Marshal(hex.EncodeToString(b.Hash()))
+	return json.Marshal(map[string]interface{}{
+		"Version":           b.Version,
+		"PreviousBlockHash": hex.EncodeToString(b.PreviousBlockHash),
+		"MerkleRootHash":    hex.EncodeToString(b.MerkleRootHash),
+		"Timestamp":         b.Timestamp,
+		"Bits":              b.Bits,
+		"Nonce":             b.Nonce,
+		"NumTransactions":   len(b.Transactions),
+		"Hash":              hex.EncodeToString(b.Hash()),
+	})
 }
 
 func NewBlock(previousBlockHash types.Hash, bits uint32, transactions []*trans.Envelope) (*Block, error) {

@@ -45,14 +45,30 @@ angular.module('gitchain', ['corps.jsonrpc']).
       }
     })
 
+    $scope.websocket = null
+    openWebsocket = function() {
+      $scope.websocket = new WebSocket("ws://" + window.location.host + "/websocket")
+      $scope.websocket.onmessage = function(e) {
+        $scope.blocks.unshift(JSON.parse(e.data))
+        if ($scope.blocks.length = 6) {
+          $scope.blocks.pop()
+        }
+      }
+    }
+
     $scope.blocks = []
     $scope.info = {}
     var requestInfo = function() {
       $http({method: 'GET', url: '/info'}).success(function(data) {
          $scope.info = data
-         $timeout(requestInfo, 500)
-         if ($scope.blocks.length == 0 || $scope.blocks[0].Hash != $scope.info.LastBlock) {
-           var hash = $scope.info.LastBlock
+         $timeout(requestInfo, 1000)
+         if ($scope.blocks.length == 0) {
+           var hash
+           if ($scope.info.LastBlock != null) {
+            hash = $scope.info.LastBlock.Hash
+          } else {
+            hash = "0000000000000000000000000000000000000000000000000000000000000000"
+          }
            var newBlocks = []
            var handleBlock = function(data) {
               data["Hash"] = hash
@@ -62,6 +78,9 @@ angular.module('gitchain', ['corps.jsonrpc']).
                 api.BlockService.GetBlock({Hash: hash}).then(handleBlock)
               } else {
                 $scope.blocks = newBlocks
+                if ($scope.websocket == null) {
+                  openWebsocket()
+                }
               }
            }
            api.BlockService.GetBlock({Hash: hash}).then(handleBlock)
