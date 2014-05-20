@@ -57,23 +57,30 @@ Bitcoin.
 
 \section{Transaction}
 
-Every transaction on the Gitchain blockchain has a SHA256 hash $sha256(encodedTransaction)$. In this paper, transactions are typically represented with its name and record-like structure:
+Every transaction on the Gitchain blockchain has a SHA256 hash $TransactionHash := sha256(Transaction)$. In this paper, transactions are typically represented with its name and record-like structure:
 
 \begin{verbatim}
 SampleTransaction{Value: ...}
 \end{verbatim}
 
+\subsection{Envelope}
+
 Every Gitchain transaction is enveloped with this structure:
 
-\begin{verbatim}
-PreviousTransaction.Hash
-ECDSASignature(PreviousTransaction.Hash, Transaction.Hash, NextPublicKey)
-PublicKey
-NextPublicKey
-\end{verbatim}
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Field} & \textbf{Description}\\ \hline
+PreviousEnvelopeHash & $EnvelopeHash(PreviousEnvelope)$ \\ \hline
+Signature & $ECDSASignature(EnvelopeHash(Envelope))$ \\ \hline
+PublicKey & Public key used in the signature \\ \hline
+NextPublicKey & Next public key in the transaction chain \\ \hline
+\end{tabular}
+\end{table}
 
-Every envelope has a unique SHA256 hash $sha256(Transaction.Hash \concatA PreviousTransaction.Hash \concatA NextPublicKey)$ and is
-used to uniquely address that envelope.
+
+$$H := sha256(TransactionHash(Transaction) \concatA PreviousEnvelopeHash \concatA NextPublicKey)$$ where $Transaction$ is the transaction enveloped and is used to uniquely address that envelope.
 
 
 \section{Mining}
