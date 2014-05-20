@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
 
 	"github.com/bargez/pktline"
 	"github.com/gitchain/gitchain/git"
@@ -22,11 +23,17 @@ func setupGitRoutes(r *mux.Router) {
 		dec := pktline.NewDecoder(req.Body)
 		dec.DecodeUntilFlush(&lines)
 
-		_, err := git.ReadPackfile(req.Body)
+		packfile, err := git.ReadPackfile(req.Body)
 		if err != nil {
 			log.Printf("error while reading packfile: %v", err)
 			resp.WriteHeader(500)
 		} else {
+			for i := range packfile.Objects {
+				err = git.WriteObject(packfile.Objects[i], path.Join(srv.Path, "objects"))
+				if err != nil {
+					log.Printf("error while writing object: %v", err)
+				}
+			}
 			resp.Header().Add("Cache-Control", "no-cache")
 			resp.WriteHeader(200)
 		}

@@ -2,7 +2,11 @@ package git
 
 import (
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
 )
 
 type Object interface {
@@ -103,4 +107,15 @@ func (o *Tag) SetBytes(b []byte) {
 
 func (o *Tag) New() Object {
 	return &Tag{}
+}
+
+func WriteObject(o Object, dir string) (err error) {
+	hash := []byte(hex.EncodeToString(o.Hash()))
+	hd := hash[0:2]
+	tl := hash[2:]
+	err = os.MkdirAll(path.Join(dir, string(hd)), os.ModeDir|0700)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path.Join(dir, string(hd), string(tl)), o.Bytes(), 0600)
 }
