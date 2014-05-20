@@ -36,7 +36,6 @@ func jsonrpc(method string, req, res interface{}) error {
 }
 
 func main() {
-	flag.Parse()
 	switch flag.Arg(0) {
 	case "GeneratePrivateKey":
 		if len(flag.Args()) < 2 {
@@ -210,13 +209,14 @@ func main() {
 	case "Serve":
 		fallthrough
 	default:
-		var dbPath string
+		var dbPath, liveUI string
 		var httpPort int
 		flag.StringVar(&dbPath, "db", "gitchain.db", "path to a database directory, defaults to gitchain.db")
+		flag.StringVar(&liveUI, "development-mode-ui", "", "path to the ui directory, only for development")
 		flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
 		flag.Parse()
 
-		srv, err := server.New(httpPort, dbPath)
+		srv, err := server.New(httpPort, dbPath, liveUI)
 		if err != nil {
 			log.Printf("Error during server initialization: %v", err)
 			os.Exit(1)
