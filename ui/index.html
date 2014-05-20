@@ -44,7 +44,7 @@
             <th>Hash</th>
             <th>Transactions</th>
           </tr>
-          <tr ng-repeat="block in blocks">
+          <tr class="transaction-announce" ng-repeat="block in blocks track by block.Hash">
             <td><gc-block>{{block.Hash}}</gc-block></td>
             <td>{{block.NumTransactions}}</td>
           </tr>
@@ -88,6 +88,7 @@
     <script src="/notify.min.js" type="text/javascript"></script>
     <script src="/bootbox.min.js" type="text/javascript"></script>
     <script src="/application.js" type="text/javascript"></script>
+    <script src="/underscore-min.js" type="text/javascript"></script>
 
   </body>
 </html>

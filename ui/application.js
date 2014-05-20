@@ -49,9 +49,12 @@ angular.module('gitchain', ['corps.jsonrpc']).
     openWebsocket = function() {
       $scope.websocket = new WebSocket("ws://" + window.location.host + "/websocket")
       $scope.websocket.onmessage = function(e) {
-        $scope.blocks.unshift(JSON.parse(e.data))
-        if ($scope.blocks.length = 6) {
-          $scope.blocks.pop()
+        var block = JSON.parse(e.data)
+        if (_.isUndefined(_.find($scope.blocks, function(b) { return b.Hash == block.Hash }))) {
+          $scope.blocks.unshift(block)
+          if ($scope.blocks.length = 6) {
+            $scope.blocks.pop()
+          }
         }
       }
     }
