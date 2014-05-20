@@ -40,7 +40,7 @@ func (NameService) NameReservation(r *http.Request, args *NameReservationArgs, r
 	txe := transaction.NewEnvelope(hash, tx)
 	txe.Sign(key)
 
-	reply.Id = hex.EncodeToString(tx.Hash())
+	reply.Id = hex.EncodeToString(txe.Hash())
 	reply.Random = hex.EncodeToString(random)
 	// We save sha(random+name)=txhash to scraps to be able to find
 	// the transaction hash by random and number during allocation
@@ -84,7 +84,7 @@ func (NameService) NameAllocation(r *http.Request, args *NameAllocationArgs, rep
 	txe := transaction.NewEnvelope(hash, tx)
 	txe.Sign(key)
 
-	reply.Id = hex.EncodeToString(tx.Hash())
+	reply.Id = hex.EncodeToString(txe.Hash())
 	router.Send("/transaction", make(chan *transaction.Envelope), txe)
 	return nil
 }
