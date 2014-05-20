@@ -1,7 +1,10 @@
 //// Name Deallocation Transaction (NDT)
 package transaction
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+	"encoding/json"
+)
 
 func init() {
 	gob.Register(&NameDeallocation{})
@@ -14,6 +17,14 @@ const (
 type NameDeallocation struct {
 	Version uint32
 	Name    string
+}
+
+func (tx *NameDeallocation) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Type":    "Name Deallocation Tranasction",
+		"Version": tx.Version,
+		"Name":    tx.Name,
+	})
 }
 
 func NewNameDeallocation(name string) (txn *NameDeallocation, err error) {

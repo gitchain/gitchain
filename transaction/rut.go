@@ -3,6 +3,8 @@ package transaction
 
 import (
 	"encoding/gob"
+	"encoding/hex"
+	"encoding/json"
 
 	"github.com/gitchain/gitchain/types"
 )
@@ -21,6 +23,17 @@ type ReferenceUpdate struct {
 	Ref        string
 	Old        types.Hash
 	New        types.Hash
+}
+
+func (tx *ReferenceUpdate) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Type":       "Reference Update Tranasction",
+		"Version":    tx.Version,
+		"Repository": tx.Repository,
+		"Ref":        tx.Ref,
+		"Old":        hex.EncodeToString(tx.Old),
+		"New":        hex.EncodeToString(tx.New),
+	})
 }
 
 func NewReferenceUpdate(repository, ref string, old, new types.Hash) *ReferenceUpdate {

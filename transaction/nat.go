@@ -1,7 +1,11 @@
 //// Name Allocation Transaction (NAT)
 package transaction
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+	"encoding/hex"
+	"encoding/json"
+)
 
 func init() {
 	gob.Register(&NameAllocation{})
@@ -15,6 +19,15 @@ type NameAllocation struct {
 	Version uint32
 	Name    string
 	Rand    []byte
+}
+
+func (tx *NameAllocation) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Type":    "Name Allocation Tranasction",
+		"Version": tx.Version,
+		"Name":    tx.Name,
+		"Rand":    hex.EncodeToString(tx.Rand),
+	})
 }
 
 func NewNameAllocation(name string, random []byte) (*NameAllocation, error) {

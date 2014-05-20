@@ -1,7 +1,10 @@
 //// Block Allocation Transaction (BAT)
 package transaction
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+	"encoding/json"
+)
 
 func init() {
 	gob.Register(&BlockAttribution{})
@@ -15,6 +18,13 @@ const (
 
 type BlockAttribution struct {
 	Version uint32
+}
+
+func (tx *BlockAttribution) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Type":    "Block Attribution Tranasction",
+		"Version": tx.Version,
+	})
 }
 
 func NewBlockAttribution() (*BlockAttribution, error) {

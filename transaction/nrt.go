@@ -4,6 +4,8 @@ package transaction
 import (
 	"crypto/rand"
 	"encoding/gob"
+	"encoding/hex"
+	"encoding/json"
 
 	"github.com/gitchain/gitchain/types"
 	"github.com/gitchain/gitchain/util"
@@ -20,6 +22,14 @@ const (
 type NameReservation struct {
 	Version uint32
 	Hashed  types.Hash
+}
+
+func (tx *NameReservation) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Type":    "Name Reservation Tranasction",
+		"Version": tx.Version,
+		"Hashed":  hex.EncodeToString(tx.Hashed),
+	})
 }
 
 func NewNameReservation(name string) (*NameReservation, []byte) {

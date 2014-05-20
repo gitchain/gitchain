@@ -175,6 +175,21 @@ func main() {
 		for i := range resp.Transactions {
 			fmt.Println(resp.Transactions[i])
 		}
+	case "Transaction":
+		if len(flag.Args()) < 2 {
+			fmt.Println("Command format required: gitchain Transaction <transaction hash>")
+			os.Exit(1)
+		}
+		hash := flag.Arg(1)
+		var resp api.GetTransactionReply
+		err := jsonrpc("TransactionService.GetTransaction", &api.GetTransactionArgs{Hash: hash}, &resp)
+		if err != nil {
+			fmt.Printf("Can't get a transaction because of %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Previous transaction hash: %v\nPublic key: %v\nNext public key: %v\nValid: %v\n%+v\n",
+			resp.PreviousTransactionHash, resp.PublicKey, resp.NextPublicKey, resp.Valid,
+			resp.Content)
 	case "Info":
 		var httpPort int
 		flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
