@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+
+	"github.com/gitchain/gitchain/util"
 )
 
 type Delta struct {
@@ -171,7 +173,9 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 }
 
 func ReadPackfile(r io.Reader) (*Packfile, error) {
-	// bufreader := bufio.NewReader(r)
+	buffer, err := ioutil.ReadAll(r)
+	contentChecksum := util.SHA160(buffer[0 : len(buffer)-20])
+	r = bytes.NewBuffer(buffer)
 
 	magic := make([]byte, 4)
 	r.Read(magic)
@@ -185,6 +189,7 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 	binary.Read(r, binary.BigEndian, &objects)
 
 	content, err := ioutil.ReadAll(r)
+
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +207,6 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 		content = content[peReader.Counter+4:]
 
 	}
-	packfile.Checksum = make([]byte, 20)
-	bytes.NewBuffer(content).Read(packfile.Checksum)
 
 	var unresolvedDeltas []Delta
 	for i := range packfile.Deltas {
@@ -218,6 +221,15 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 		}
 	}
 	packfile.Deltas = unresolvedDeltas
+
+	packfile.Checksum = make([]byte, 20)
+	bytes.NewBuffer(content).Read(packfile.Checksum)
+
+	if bytes.Compare(contentChecksum, packfile.Checksum) != 0 {
+		return packfile, errors.New(fmt.Sprintf("checksum mismatch: expected %s got %s",
+			hex.EncodeToString(packfile.Checksum), hex.EncodeToString(contentChecksum)))
+	}
+
 	return packfile, nil
 }
 
