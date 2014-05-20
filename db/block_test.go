@@ -103,4 +103,12 @@ func TestGetNextBlock(t *testing.T) {
 	}
 	assert.Equal(t, blk1_, blk1)
 
+	block0, err := db.GetBlock(types.EmptyHash())
+	if err == nil {
+		t.Errorf("error getting zero block (no error thrown)")
+	}
+	if block0 != nil {
+		t.Errorf("error getting zero block")
+	}
+	assert.True(t, nil == block0)
 }

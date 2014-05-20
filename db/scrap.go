@@ -2,73 +2,42 @@ package db
 
 import (
 	"errors"
+
+	"github.com/boltdb/bolt"
 )
 
-func (db *T) PutScrap(key, val []byte) error {
-	dbtx, err := db.DB.Begin(true)
-	success := false
-	defer func() {
-		if success {
-			dbtx.Commit()
-		} else {
-			dbtx.Rollback()
+func (db *T) PutScrap(key, val []byte) (e error) {
+	writable(&e, db, func(dbtx *bolt.Tx) bool {
+		bucket, e := dbtx.CreateBucketIfNotExists([]byte("scraps"))
+		if e != nil {
+			return false
 		}
-	}()
-	if err != nil {
-		return err
-	}
-	bucket, err := dbtx.CreateBucketIfNotExists([]byte("scraps"))
-	if err != nil {
-		return err
-	}
-	err = bucket.Put(key, val)
-	if err != nil {
-		return err
-	}
-
-	success = true
-	return nil
+		e = bucket.Put(key, val)
+		return e == nil
+	})
+	return
 }
 
-func (db *T) GetScrap(key []byte) ([]byte, error) {
-	dbtx, err := db.DB.Begin(false)
-	defer dbtx.Rollback()
-	if err != nil {
-		return nil, err
-	}
-	bucket := dbtx.Bucket([]byte("scraps"))
-	if bucket == nil {
-		return nil, errors.New("scraps bucket does not exist")
-	}
-	b := bucket.Get(key)
-	if b == nil {
-		return nil, nil
-	}
-	return b, nil
+func (db *T) GetScrap(key []byte) (b []byte, e error) {
+	readable(&e, db, func(dbtx *bolt.Tx) {
+		bucket := dbtx.Bucket([]byte("scraps"))
+		if bucket == nil {
+			e = errors.New("scraps bucket does not exist")
+			return
+		}
+		b = bucket.Get(key)
+	})
+	return
 }
 
-func (db *T) DeleteScrap(key []byte) error {
-	dbtx, err := db.DB.Begin(true)
-	success := false
-	defer func() {
-		if success {
-			dbtx.Commit()
-		} else {
-			dbtx.Rollback()
+func (db *T) DeleteScrap(key []byte) (e error) {
+	writable(&e, db, func(dbtx *bolt.Tx) bool {
+		bucket, e := dbtx.CreateBucketIfNotExists([]byte("scraps"))
+		if e != nil {
+			return false
 		}
-	}()
-	if err != nil {
-		return err
-	}
-	bucket, err := dbtx.CreateBucketIfNotExists([]byte("scraps"))
-	if err != nil {
-		return err
-	}
-	err = bucket.Delete(key)
-	if err != nil {
-		return err
-	}
-
-	success = true
-	return nil
+		e = bucket.Delete(key)
+		return e == nil
+	})
+	return
 }

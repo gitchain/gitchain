@@ -1,13 +1,57 @@
 package db
 
 import (
+	"bytes"
 	"crypto/ecdsa"
+	"errors"
+	"os"
 	"testing"
 
+	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestWritableReadable(t *testing.T) {
+	var e error
+	db, err := NewDB("test.db")
+	defer os.Remove("test.db")
+
+	if err != nil {
+		t.Errorf("error opening database: %v", err)
+	}
+
+	writable(&e, db, func(dbtx *bolt.Tx) bool {
+		bucket, _ := dbtx.CreateBucketIfNotExists([]byte("test"))
+		e = bucket.Put([]byte{0}, []byte{1})
+		return true
+	})
+	assert.Nil(t, e)
+
+	var value []byte
+	readable(&e, db, func(dbtx *bolt.Tx) {
+		bucket := dbtx.Bucket([]byte("test"))
+		value = bucket.Get([]byte{0})
+	})
+	assert.True(t, bytes.Compare(value, []byte{1}) == 0)
+
+	writable(&e, db, func(dbtx *bolt.Tx) bool {
+		bucket, _ := dbtx.CreateBucketIfNotExists([]byte("test"))
+		e = bucket.Put([]byte{0}, []byte{2})
+		e = errors.New("error")
+		return false
+	})
+	assert.Equal(t, e, errors.New("error"))
+
+	readable(&e, db, func(dbtx *bolt.Tx) {
+		bucket := dbtx.Bucket([]byte("test"))
+		value = bucket.Get([]byte{0})
+	})
+	assert.True(t, bytes.Compare(value, []byte{1}) == 0)
+
+}
 
 func fixtureSampleTransactions(t *testing.T) ([]*transaction.Envelope, *ecdsa.PrivateKey) {
 	privateKey := generateECDSAKey(t)

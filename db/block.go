@@ -3,139 +3,118 @@ package db
 import (
 	"errors"
 
+	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/types"
 )
 
-func (db *T) PutBlock(b *block.Block, last bool) error {
-	dbtx, err := db.DB.Begin(true)
-	success := false
-	defer func() {
-		if success {
-			dbtx.Commit()
-		} else {
-			dbtx.Rollback()
+func (db *T) PutBlock(b *block.Block, last bool) (e error) {
+	writable(&e, db, func(dbtx *bolt.Tx) bool {
+		bucket, e := dbtx.CreateBucketIfNotExists([]byte("blocks"))
+		if e != nil {
+			return false
 		}
-	}()
-	if err != nil {
-		return err
-	}
-	bucket, err := dbtx.CreateBucketIfNotExists([]byte("blocks"))
-	if err != nil {
-		return err
-	}
-	encoded, err := b.Encode()
-	if err != nil {
-		return err
-	}
-	err = bucket.Put(b.Hash(), encoded)
-	if err != nil {
-		return err
-	}
-	// store a reference to this block as a next block
-	err = bucket.Put(append(b.PreviousBlockHash, []byte("+")...), b.Hash())
-	if err != nil {
-		return err
-	}
-
-	for i := range b.Transactions {
-		// transaction -> block mapping
-		err = bucket.Put(append([]byte("T"), b.Transactions[i].Hash()...), b.Hash())
-		if err != nil {
-			return err
+		encoded, e := b.Encode()
+		if e != nil {
+			return false
 		}
-		// link next transactions
-		err = bucket.Put(append([]byte(">"), b.Transactions[i].PreviousEnvelopeHash...), b.Transactions[i].Hash())
-		if err != nil {
-			return err
+		e = bucket.Put(b.Hash(), encoded)
+		if e != nil {
+			return false
 		}
-		// update "unspendable key"
-		err = bucket.Delete(append([]byte("<"), b.Transactions[i].PublicKey...))
-		if err != nil {
-			return err
-		}
-		// update "spendable key", has to happen after updating the "unspendable" one as it might be the same one
-		err = bucket.Put(append([]byte("<"), b.Transactions[i].NextPublicKey...), b.Transactions[i].Hash())
-		if err != nil {
-			return err
+		// store a reference to this block as a next block
+		e = bucket.Put(append(b.PreviousBlockHash, []byte("+")...), b.Hash())
+		if e != nil {
+			return false
 		}
 
-	}
+		for i := range b.Transactions {
+			// transaction -> block mapping
+			e = bucket.Put(append([]byte("T"), b.Transactions[i].Hash()...), b.Hash())
+			if e != nil {
+				return false
+			}
+			// link next transactions
+			e = bucket.Put(append([]byte(">"), b.Transactions[i].PreviousEnvelopeHash...), b.Transactions[i].Hash())
+			if e != nil {
+				return false
+			}
+			// update "unspendable key"
+			e = bucket.Delete(append([]byte("<"), b.Transactions[i].PublicKey...))
+			if e != nil {
+				return false
+			}
+			// update "spendable key", has to happen after updating the "unspendable" one as it might be the same one
+			e = bucket.Put(append([]byte("<"), b.Transactions[i].NextPublicKey...), b.Transactions[i].Hash())
+			if e != nil {
+				return false
+			}
+		}
 
-	if last {
-		bucket.Put([]byte("last"), b.Hash())
-	}
-	success = true
-	return nil
+		if last {
+			if e = bucket.Put([]byte("last"), b.Hash()); e != nil {
+				return false
+			}
+		}
+
+		return true
+	})
+	return
 }
 
-func (db *T) GetBlock(hash []byte) (*block.Block, error) {
-	dbtx, err := db.DB.Begin(false)
-	defer dbtx.Rollback()
-	if err != nil {
-		return nil, err
-	}
-	bucket := dbtx.Bucket([]byte("blocks"))
-	if bucket == nil {
-		return nil, errors.New("blocks bucket does not exist")
-	}
-	b := bucket.Get(hash)
-	if b == nil {
-		return nil, errors.New("block not found")
-	}
-	decodedBlock, err := block.Decode(b)
-	if err != nil {
-		return decodedBlock, err
-	}
-	return decodedBlock, nil
+func (db *T) GetBlock(hash []byte) (blk *block.Block, e error) {
+	readable(&e, db, func(dbtx *bolt.Tx) {
+		bucket := dbtx.Bucket([]byte("blocks"))
+		if bucket == nil {
+			e = errors.New("blocks bucket does not exist")
+			return
+		}
+		b := bucket.Get(hash)
+		if b == nil {
+			e = errors.New("block not found")
+			return
+		}
+		blk, e = block.Decode(b)
+	})
+	return
 }
 
-func (db *T) GetLastBlock() (*block.Block, error) {
-	dbtx, err := db.DB.Begin(false)
-	defer dbtx.Rollback()
-	if err != nil {
-		return nil, err
-	}
-	bucket := dbtx.Bucket([]byte("blocks"))
-	if bucket == nil {
-		return nil, nil
-	}
-	last := bucket.Get([]byte("last"))
-	if last == nil {
-		return nil, nil
-	}
-	b := bucket.Get(last)
-	if b == nil {
-		return nil, errors.New("block not found")
-	}
-	decodedBlock, err := block.Decode(b)
-	if err != nil {
-		return decodedBlock, err
-	}
-	return decodedBlock, nil
+func (db *T) GetLastBlock() (blk *block.Block, e error) {
+	readable(&e, db, func(dbtx *bolt.Tx) {
+		bucket := dbtx.Bucket([]byte("blocks"))
+		if bucket == nil {
+			return
+		}
+		last := bucket.Get([]byte("last"))
+		if last == nil {
+			return
+		}
+		b := bucket.Get(last)
+		if b == nil {
+			e = errors.New("block not found")
+			return
+		}
+		blk, e = block.Decode(b)
+	})
+	return
 }
 
-func (db *T) GetNextBlock(hash types.Hash) (*block.Block, error) {
-	dbtx, err := db.DB.Begin(false)
-	defer dbtx.Rollback()
-	if err != nil {
-		return nil, err
-	}
-	bucket := dbtx.Bucket([]byte("blocks"))
-	if bucket == nil {
-		return nil, nil
-	}
-	next := bucket.Get(append(hash, []byte("+")...))
-	if next == nil {
-		return nil, nil
-	}
-	b := bucket.Get(next)
-	if b == nil {
-		return nil, errors.New("block not found")
-	}
-	decodedBlock, err := block.Decode(b)
-	if err != nil {
-		return decodedBlock, err
-	}
-	return decodedBlock, nil
+func (db *T) GetNextBlock(hash types.Hash) (blk *block.Block, e error) {
+	readable(&e, db, func(dbtx *bolt.Tx) {
+		bucket := dbtx.Bucket([]byte("blocks"))
+		if bucket == nil {
+			return
+		}
+		next := bucket.Get(append(hash, []byte("+")...))
+		if next == nil {
+			return
+		}
+		b := bucket.Get(next)
+		if b == nil {
+			e = errors.New("block not found")
+			return
+		}
+		blk, e = block.Decode(b)
+	})
+	return
 }
