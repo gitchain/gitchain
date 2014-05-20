@@ -11,10 +11,22 @@ import (
 	"io/ioutil"
 )
 
+type Delta struct {
+	Hash  []byte
+	Delta []byte
+}
+
 type Packfile struct {
 	Version  uint32
 	Objects  []Object
 	Checksum []byte
+	Deltas   []Delta
+	offsets  map[int]int
+	hashes   map[string]int
+}
+
+func (r *Packfile) ObjectByHash(hash []byte) Object {
+	return r.Objects[r.hashes[string(hash)]]
 }
 
 func readMSBEncodedSize(reader io.Reader, initialOffset uint) uint64 {
@@ -64,18 +76,28 @@ func readEntry(packfile *Packfile, reader flate.Reader) error {
 		if (b & 0x80) != 0 {
 			sz += readMSBEncodedSize(reader, 4)
 		}
-		delta := make([]byte, 20)
-		reader.Read(delta)
+		ref := make([]byte, 20)
+		reader.Read(ref)
 
-		_, err := inflate(reader, int(sz))
+		buf, err := inflate(reader, int(sz))
 		if err != nil {
 			return err
 		}
-		// packfile.Objects = append(packfile.Objects, buf)
+
+		referenced := packfile.ObjectByHash(ref)
+		if referenced == nil {
+			packfile.Deltas = append(packfile.Deltas, Delta{Hash: ref, Delta: buf})
+		} else {
+			patched := PatchDelta(referenced.Bytes(), buf)
+			newObject := referenced.New()
+			newObject.SetBytes(patched)
+			packfile.Objects = append(packfile.Objects, newObject)
+		}
 	case OBJ_OFS_DELTA:
 		if (b & 0x80) != 0 {
 			sz += readMSBEncodedSize(reader, 4)
 		}
+		// TODO: read the negative offset
 		_, err := inflate(reader, int(sz))
 		if err != nil {
 			return err
@@ -115,7 +137,7 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 	if bytes.Compare(magic, []byte("PACK")) != 0 {
 		return nil, errors.New("not a packfile")
 	}
-	packfile := &Packfile{}
+	packfile := &Packfile{offsets: make(map[int]int), hashes: make(map[string]int)}
 
 	var objects uint32
 	binary.Read(r, binary.BigEndian, &packfile.Version)
@@ -133,6 +155,8 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 		if err != nil {
 			return packfile, err
 		}
+		packfile.offsets[offset] = len(packfile.Objects) - 1
+		packfile.hashes[string(packfile.Objects[len(packfile.Objects)-1].Hash())] = len(packfile.Objects) - 1
 
 		offset += peReader.Counter + 4
 		content = content[peReader.Counter+4:]
@@ -140,6 +164,17 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 	}
 	packfile.Checksum = make([]byte, 20)
 	bytes.NewBuffer(content).Read(packfile.Checksum)
+
+	var unresolvedDeltas []Delta
+	for i := range packfile.Deltas {
+		ref := packfile.ObjectByHash(packfile.Deltas[i].Hash)
+		if ref == nil {
+			unresolvedDeltas = append(unresolvedDeltas, packfile.Deltas[i])
+		} else {
+			PatchDelta(ref.Bytes(), packfile.Deltas[i].Delta)
+		}
+	}
+	packfile.Deltas = unresolvedDeltas
 	return packfile, nil
 }
 

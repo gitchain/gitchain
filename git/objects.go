@@ -7,6 +7,9 @@ import (
 
 type Object interface {
 	Hash() []byte
+	Bytes() []byte
+	SetBytes([]byte)
+	New() Object
 }
 
 const (
@@ -27,6 +30,18 @@ func (o *Commit) Hash() []byte {
 	return result[:]
 }
 
+func (o *Commit) Bytes() []byte {
+	return o.Content
+}
+
+func (o *Commit) SetBytes(b []byte) {
+	o.Content = b
+}
+
+func (o *Commit) New() Object {
+	return &Commit{}
+}
+
 type Tree struct {
 	Content []byte
 }
@@ -34,6 +49,18 @@ type Tree struct {
 func (o *Tree) Hash() []byte {
 	result := sha1.Sum(append(append([]byte(fmt.Sprintf("tree %d", len(o.Content))), 0), o.Content...))
 	return result[:]
+}
+
+func (o *Tree) Bytes() []byte {
+	return o.Content
+}
+
+func (o *Tree) SetBytes(b []byte) {
+	o.Content = b
+}
+
+func (o *Tree) New() Object {
+	return &Tree{}
 }
 
 type Blob struct {
@@ -45,6 +72,18 @@ func (o *Blob) Hash() []byte {
 	return result[:]
 }
 
+func (o *Blob) Bytes() []byte {
+	return o.Content
+}
+
+func (o *Blob) SetBytes(b []byte) {
+	o.Content = b
+}
+
+func (o *Blob) New() Object {
+	return &Blob{}
+}
+
 type Tag struct {
 	Content []byte
 }
@@ -52,4 +91,16 @@ type Tag struct {
 func (o *Tag) Hash() []byte {
 	result := sha1.Sum(append(append([]byte(fmt.Sprintf("tag %d", len(o.Content))), 0), o.Content...))
 	return result[:]
+}
+
+func (o *Tag) Bytes() []byte {
+	return o.Content
+}
+
+func (o *Tag) SetBytes(b []byte) {
+	o.Content = b
+}
+
+func (o *Tag) New() Object {
+	return &Tag{}
 }
