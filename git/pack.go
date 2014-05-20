@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"compress/zlib"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -26,7 +27,16 @@ type Packfile struct {
 }
 
 func (r *Packfile) ObjectByHash(hash []byte) Object {
-	return r.Objects[r.hashes[string(hash)]]
+	index, exists := r.hashes[string(hash)]
+	if !exists {
+		return nil
+	}
+	return r.Objects[index]
+}
+
+func (r *Packfile) PutObject(o Object) {
+	r.Objects = append(r.Objects, o)
+	r.hashes[string(o.Hash())] = len(r.Objects) - 1
 }
 
 func readMSBEncodedSize(reader io.Reader, initialOffset uint) uint64 {
@@ -89,9 +99,12 @@ func readEntry(packfile *Packfile, reader flate.Reader) error {
 			packfile.Deltas = append(packfile.Deltas, Delta{Hash: ref, Delta: buf})
 		} else {
 			patched := PatchDelta(referenced.Bytes(), buf)
+			if patched == nil {
+				return errors.New(fmt.Sprintf("error while patching %s", hex.EncodeToString(ref)))
+			}
 			newObject := referenced.New()
 			newObject.SetBytes(patched)
-			packfile.Objects = append(packfile.Objects, newObject)
+			packfile.PutObject(newObject)
 		}
 	case OBJ_OFS_DELTA:
 		if (b & 0x80) != 0 {
@@ -122,7 +135,7 @@ func readEntry(packfile *Packfile, reader flate.Reader) error {
 		case OBJ_TAG:
 			obj = &Tag{Content: buf}
 		}
-		packfile.Objects = append(packfile.Objects, obj)
+		packfile.PutObject(obj)
 	default:
 		return errors.New(fmt.Sprintf("Invalid git object tag %03b", typ))
 	}
@@ -156,7 +169,6 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 			return packfile, err
 		}
 		packfile.offsets[offset] = len(packfile.Objects) - 1
-		packfile.hashes[string(packfile.Objects[len(packfile.Objects)-1].Hash())] = len(packfile.Objects) - 1
 
 		offset += peReader.Counter + 4
 		content = content[peReader.Counter+4:]
@@ -171,7 +183,10 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 		if ref == nil {
 			unresolvedDeltas = append(unresolvedDeltas, packfile.Deltas[i])
 		} else {
-			PatchDelta(ref.Bytes(), packfile.Deltas[i].Delta)
+			patched := PatchDelta(ref.Bytes(), packfile.Deltas[i].Delta)
+			newObject := ref.New()
+			newObject.SetBytes(patched)
+			packfile.Objects = append(packfile.Objects, newObject)
 		}
 	}
 	packfile.Deltas = unresolvedDeltas
