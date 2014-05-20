@@ -15,8 +15,10 @@ type T struct {
 
 func New(httpPort int, dbPath string) (*T, error) {
 	srv := &T{HttpPort: httpPort, Path: dbPath}
-	var err error
-	os.MkdirAll(dbPath, os.ModeDir|0600)
+	err := os.MkdirAll(dbPath, os.ModeDir|0600)
+	if err != nil {
+		return nil, err
+	}
 	database, err := db.NewDB(filepath.Join(dbPath, "db"))
 	if err != nil {
 		return nil, err
