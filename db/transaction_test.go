@@ -7,6 +7,7 @@ import (
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/keys"
+	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -159,5 +160,44 @@ func TestGetNextTransactionHash(t *testing.T) {
 		t.Errorf("error getting next transaction: %v", err)
 	}
 	assert.True(t, bytes.Compare(tx, types.EmptyHash()) == 0)
+
+}
+
+func TestPutGetDeleteTransaction(t *testing.T) {
+	privateKey := generateECDSAKey(t)
+	txn1, _ := transaction.NewNameReservation("my-new-repository")
+	txn1e := transaction.NewEnvelope(types.EmptyHash(), txn1)
+	txn1e.Sign(privateKey)
+
+	db, err := NewDB("test.db")
+	defer os.Remove("test.db")
+
+	if err != nil {
+		t.Errorf("error opening database: %v", err)
+	}
+
+	err = db.PutTransaction(txn1e)
+	if err != nil {
+		t.Errorf("error putting transaction: %v", err)
+	}
+
+	tx, err := db.GetTransaction(txn1e.Hash())
+	if err != nil {
+		t.Errorf("error getting transaction: %v", err)
+	}
+
+	assert.Equal(t, tx, txn1e)
+
+	err = db.DeleteTransaction(txn1e.Hash())
+	if err != nil {
+		t.Errorf("error getting transaction: %v", err)
+	}
+
+	tx, err = db.GetTransaction(txn1e.Hash())
+	if err != nil {
+		t.Errorf("error getting transaction: %v", err)
+	}
+
+	assert.Nil(t, tx)
 
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/keys"
+	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 )
 
@@ -98,4 +99,79 @@ func (db *T) GetNextTransactionHash(hash []byte) (types.Hash, error) {
 		return types.EmptyHash(), nil
 	}
 	return txHash, nil
+}
+
+func (db *T) PutTransaction(tx *transaction.Envelope) error {
+	dbtx, err := db.DB.Begin(true)
+	success := false
+	defer func() {
+		if success {
+			dbtx.Commit()
+		} else {
+			dbtx.Rollback()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	bucket, err := dbtx.CreateBucketIfNotExists([]byte("transactions"))
+	if err != nil {
+		return err
+	}
+	encoded, err := tx.Encode()
+	if err != nil {
+		return err
+	}
+	err = bucket.Put(tx.Hash(), encoded)
+	if err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+func (db *T) GetTransaction(hash types.Hash) (*transaction.Envelope, error) {
+	dbtx, err := db.DB.Begin(false)
+	defer dbtx.Rollback()
+	if err != nil {
+		return nil, err
+	}
+	bucket := dbtx.Bucket([]byte("transactions"))
+	if bucket == nil {
+		return nil, errors.New("transactions bucket does not exist")
+	}
+	b := bucket.Get(hash)
+	if b == nil {
+		return nil, nil
+	}
+	decodedTx, err := transaction.DecodeEnvelope(b)
+	if err != nil {
+		return decodedTx, err
+	}
+	return decodedTx, nil
+}
+
+func (db *T) DeleteTransaction(hash types.Hash) error {
+	dbtx, err := db.DB.Begin(true)
+	success := false
+	defer func() {
+		if success {
+			dbtx.Commit()
+		} else {
+			dbtx.Rollback()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	bucket, err := dbtx.CreateBucketIfNotExists([]byte("transactions"))
+	if err != nil {
+		return err
+	}
+	err = bucket.Delete(hash)
+	if err != nil {
+		return err
+	}
+	success = true
+	return nil
 }

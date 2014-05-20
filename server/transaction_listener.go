@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/hex"
 	"log"
 	"time"
 
@@ -44,8 +45,16 @@ func TransactionListener(srv *T) {
 	blockChannel := make(chan *block.Block)
 	var transactionsPool []*transaction.Envelope
 	var previousBlockHash types.Hash
-	ch := make(chan *transaction.Envelope)
-	router.PermanentSubscribe("/transaction", ch)
+	bch := make(chan *block.Block)
+	_, err := router.PermanentSubscribe("/block", bch)
+	if err != nil {
+		log.Printf("Error while subscribing to /block: %v", err)
+	}
+	tch := make(chan *transaction.Envelope)
+	_, err = router.PermanentSubscribe("/transaction", tch)
+	if err != nil {
+		log.Printf("Error while subscribing to /transaction: %v", err)
+	}
 
 	miningEmpty := false
 
@@ -53,7 +62,7 @@ initPool:
 	transactionsPool = make([]*transaction.Envelope, 0)
 loop:
 	select {
-	case msg = <-ch:
+	case msg = <-tch:
 		verification, err := msg.Verify()
 		if err != nil {
 			log.Printf("error during transaction verification: %v", err)
@@ -62,6 +71,11 @@ loop:
 			// discard transaction
 			goto loop
 		}
+		err = srv.DB.PutTransaction(msg)
+		if err != nil {
+			log.Printf("Error while recording transaction %s: %v", hex.EncodeToString(msg.Hash()), err)
+		}
+
 		miningEmpty = false
 		transactionsPool = append(transactionsPool, msg)
 		if blk, _ = srv.DB.GetLastBlock(); blk == nil {
@@ -79,6 +93,13 @@ loop:
 			log.Printf("Error while creating a new block: %v", err)
 		} else {
 			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
+		}
+	case blk = <-bch:
+		for i := range blk.Transactions {
+			err = srv.DB.DeleteTransaction(blk.Transactions[i].Hash())
+			if err != nil {
+				log.Printf("Error while deleting transaction %s: %v", hex.EncodeToString(blk.Transactions[i].Hash()), err)
+			}
 		}
 	case blk = <-blockChannel:
 

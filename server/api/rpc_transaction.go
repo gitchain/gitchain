@@ -29,15 +29,23 @@ func (*TransactionService) GetTransaction(r *http.Request, args *GetTransactionA
 	if err != nil {
 		return err
 	}
-	block, err := srv.DB.GetTransactionBlock(hash)
+	var tx *transaction.Envelope
+
+	tx, err = srv.DB.GetTransaction(hash)
 	if err != nil {
 		return err
 	}
-	var tx *transaction.Envelope
-	for i := range block.Transactions {
-		if types.HashEqual(block.Transactions[i].Hash(), hash) {
-			tx = block.Transactions[i]
-			break
+
+	if tx == nil {
+		block, err := srv.DB.GetTransactionBlock(hash)
+		if err != nil {
+			return err
+		}
+		for i := range block.Transactions {
+			if types.HashEqual(block.Transactions[i].Hash(), hash) {
+				tx = block.Transactions[i]
+				break
+			}
 		}
 	}
 	if tx == nil {
