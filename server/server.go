@@ -1,6 +1,11 @@
 package server
 
-import "github.com/gitchain/gitchain/db"
+import (
+	"os"
+	"path/filepath"
+
+	"github.com/gitchain/gitchain/db"
+)
 
 type T struct {
 	HttpPort int
@@ -10,7 +15,8 @@ type T struct {
 func New(httpPort int, dbPath string) (*T, error) {
 	srv := &T{HttpPort: httpPort}
 	var err error
-	database, err := db.NewDB(dbPath)
+	os.MkdirAll(dbPath, os.ModeDir|0600)
+	database, err := db.NewDB(filepath.Join(dbPath, "db"))
 	if err != nil {
 		return nil, err
 	}

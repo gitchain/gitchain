@@ -197,7 +197,7 @@ func main() {
 	default:
 		var dbPath string
 		var httpPort int
-		flag.StringVar(&dbPath, "db", "gitchain.db", "path to database, defaults to gitchain.db")
+		flag.StringVar(&dbPath, "db", "gitchain.db", "path to a database directory, defaults to gitchain.db")
 		flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
 		flag.Parse()
 
