@@ -51,7 +51,7 @@
 		},
 		{
 			"ImportPath": "github.com/xsleonard/go-merkle",
-			"Rev": "8f5dbecec9069f7d2fe7872373dfc337d94ed8fb"
+			"Rev": "b7ec403cbcaf8f0d0460119eb3f98aeb19c708ca"
 		}
 	]
 }
