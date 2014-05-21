@@ -20,7 +20,7 @@ func (db *T) GetTransactionBlock(hash []byte) (b *block.Block, e error) {
 		if bucket != nil {
 			blockHash := bucket.Get(append([]byte("T"), hash...))
 			if blockHash == nil {
-				e = errors.New(fmt.Sprintf("referenced block %v not found", blockHash))
+				e = fmt.Errorf("referenced block %v not found", blockHash)
 				return
 			}
 			encodedBlock := bucket.Get(blockHash)

@@ -68,7 +68,7 @@ func readMSBEncodedSize(reader io.Reader, initialOffset uint) uint64 {
 func inflate(reader io.Reader, sz int) ([]byte, error) {
 	zr, err := zlib.NewReader(reader)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error opening packfile's object zlib: %v", err))
+		return nil, fmt.Errorf("error opening packfile's object zlib: %v", err)
 	}
 	buf := make([]byte, sz)
 
@@ -78,7 +78,7 @@ func inflate(reader io.Reader, sz int) ([]byte, error) {
 	}
 
 	if n != sz {
-		return nil, errors.New(fmt.Sprintf("inflated size mismatch, expected %d, got %d", sz, n))
+		return nil, fmt.Errorf("inflated size mismatch, expected %d, got %d", sz, n)
 	}
 
 	zr.Close()
@@ -110,7 +110,7 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 		} else {
 			patched := PatchDelta(referenced.Bytes(), buf)
 			if patched == nil {
-				return errors.New(fmt.Sprintf("error while patching %s", hex.EncodeToString(ref)))
+				return fmt.Errorf("error while patching %s", hex.EncodeToString(ref))
 			}
 			newObject := referenced.New()
 			newObject.SetBytes(patched)
@@ -136,11 +136,11 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 		}
 		referenced := packfile.ObjectByOffset(offset - noffset)
 		if referenced == nil {
-			return errors.New(fmt.Sprintf("can't find a pack entry at %d", offset-noffset))
+			return fmt.Errorf("can't find a pack entry at %d", offset-noffset)
 		} else {
 			patched := PatchDelta(referenced.Bytes(), buf)
 			if patched == nil {
-				return errors.New(fmt.Sprintf("error while patching %s", hex.EncodeToString(referenced.Hash())))
+				return fmt.Errorf("error while patching %s", hex.EncodeToString(referenced.Hash()))
 			}
 			newObject := referenced.New()
 			newObject.SetBytes(patched)
@@ -167,7 +167,7 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 		}
 		packfile.PutObject(obj)
 	default:
-		return errors.New(fmt.Sprintf("Invalid git object tag %03b", typ))
+		return fmt.Errorf("Invalid git object tag %03b", typ)
 	}
 	return nil
 }

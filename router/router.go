@@ -1,7 +1,6 @@
 package router
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -32,7 +31,7 @@ func Close(ch *router.RoutedChan) {
 
 func Send(path string, ch interface{}, val interface{}) error {
 	if reflect.TypeOf(ch).Kind() != reflect.Chan {
-		return errors.New(fmt.Sprintf("passed %+v instead of a chan", reflect.TypeOf(ch)))
+		return fmt.Errorf("passed %+v instead of a chan", reflect.TypeOf(ch))
 	}
 	rch, err := Connect(path, ch)
 	if err != nil {
