@@ -104,7 +104,7 @@ loop:
 				}
 
 				if reservationTx == nil {
-					log.Printf("can't find corresponding name reservation for allocation %x", tx.Hash())
+					log.Printf("can't find corresponding name reservation for allocation %x", tx0.Hash())
 					break
 				}
 
