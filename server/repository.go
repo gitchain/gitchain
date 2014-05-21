@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/hex"
 	"log"
 
 	"github.com/gitchain/gitchain/block"
@@ -29,7 +28,7 @@ loop:
 				tx1 := tx.(*transaction.ReferenceUpdate)
 				confirmations, err := srv.DB.GetTransactionConfirmations(tx0.Hash())
 				if err != nil {
-					log.Printf("error during confirmation counting for %s: %v", hex.EncodeToString(tx0.Hash()), err)
+					log.Printf("error during confirmation counting for %x: %v", tx0.Hash(), err)
 					goto loop
 				}
 				if confirmations >= REFUPDATE_CONFIRMATIONS_REQUIRED {

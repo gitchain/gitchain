@@ -5,7 +5,6 @@ import (
 	"compress/flate"
 	"compress/zlib"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -110,7 +109,7 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 		} else {
 			patched := PatchDelta(referenced.Bytes(), buf)
 			if patched == nil {
-				return fmt.Errorf("error while patching %s", hex.EncodeToString(ref))
+				return fmt.Errorf("error while patching %x", ref)
 			}
 			newObject := referenced.New()
 			newObject.SetBytes(patched)
@@ -140,7 +139,7 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 		} else {
 			patched := PatchDelta(referenced.Bytes(), buf)
 			if patched == nil {
-				return fmt.Errorf("error while patching %s", hex.EncodeToString(referenced.Hash()))
+				return fmt.Errorf("error while patching %x", referenced.Hash())
 			}
 			newObject := referenced.New()
 			newObject.SetBytes(patched)
@@ -226,8 +225,8 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 	bytes.NewBuffer(content).Read(packfile.Checksum)
 
 	if bytes.Compare(contentChecksum, packfile.Checksum) != 0 {
-		return packfile, errors.New(fmt.Sprintf("checksum mismatch: expected %s got %s",
-			hex.EncodeToString(packfile.Checksum), hex.EncodeToString(contentChecksum)))
+		return packfile, errors.New(fmt.Sprintf("checksum mismatch: expected %x got %x",
+			packfile.Checksum, contentChecksum))
 	}
 
 	return packfile, nil

@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"encoding/hex"
 	"log"
 
 	"github.com/gitchain/gitchain/block"
@@ -24,8 +23,8 @@ func processPendingAllocations(srv *T) {
 		}
 		c, err := srv.DB.GetTransactionConfirmations(r.NameAllocationTx)
 		if err != nil {
-			log.Printf("error while calculating pending repository's %s allocation confirmations (%s): %v",
-				pending[i], hex.EncodeToString(r.NameAllocationTx), err)
+			log.Printf("error while calculating pending repository's %s allocation confirmations (%x): %v",
+				pending[i], r.NameAllocationTx, err)
 		}
 		if c >= ALLOCATION_CONFIRMATIONS_REQUIRED {
 			r.Status = repository.ACTIVE
@@ -84,7 +83,7 @@ loop:
 						h := curBlock.PreviousBlockHash
 						curBlock, err = srv.DB.GetBlock(h)
 						if err != nil {
-							log.Printf("can't find block %s during name allocation attempt", hex.EncodeToString(h))
+							log.Printf("can't find block %x during name allocation attempt", h)
 							break
 						}
 					}
@@ -92,7 +91,7 @@ loop:
 				} else {
 					blk, err := srv.DB.GetTransactionBlock(reservation)
 					if err != nil {
-						log.Printf("can't find block for name reservation %s: %v", hex.EncodeToString(reservationTx.Hash()), err)
+						log.Printf("can't find block for name reservation %x: %v", reservationTx.Hash(), err)
 						break
 					}
 					for i := range blk.Transactions {
@@ -105,14 +104,14 @@ loop:
 				}
 
 				if reservationTx == nil {
-					log.Printf("can't find corresponding name reservation for allocation %s", hex.EncodeToString(tx.Hash()))
+					log.Printf("can't find corresponding name reservation for allocation %x", tx.Hash())
 					break
 				}
 
 				// 2. verify its maturity
 				confirmations, err := srv.DB.GetTransactionConfirmations(reservationTx.Hash())
 				if err != nil {
-					log.Printf("can't compute number of confirmations for reservation %s: %v", hex.EncodeToString(reservationTx.Hash()), err)
+					log.Printf("can't compute number of confirmations for reservation %x: %v", reservationTx.Hash(), err)
 					break
 				}
 

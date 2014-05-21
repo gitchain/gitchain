@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"encoding/hex"
 	"log"
 	"time"
 
@@ -73,7 +72,7 @@ loop:
 		}
 		err = srv.DB.PutTransaction(msg)
 		if err != nil {
-			log.Printf("Error while recording transaction %s: %v", hex.EncodeToString(msg.Hash()), err)
+			log.Printf("Error while recording transaction %x: %v", msg.Hash(), err)
 		}
 
 		miningEmpty = false
@@ -98,7 +97,7 @@ loop:
 		for i := range blk.Transactions {
 			err = srv.DB.DeleteTransaction(blk.Transactions[i].Hash())
 			if err != nil {
-				log.Printf("Error while deleting transaction %s: %v", hex.EncodeToString(blk.Transactions[i].Hash()), err)
+				log.Printf("Error while deleting transaction %x: %v", blk.Transactions[i].Hash(), err)
 			}
 		}
 	case blk = <-blockChannel:
