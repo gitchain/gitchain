@@ -3,7 +3,6 @@ package db
 import (
 	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/repository"
-	"github.com/gitchain/gitchain/types"
 )
 
 func (db *T) PutRepository(repo *repository.T) (e error) {
@@ -94,7 +93,7 @@ func (db *T) ListPendingRepositories() (keys []string) {
 	return
 }
 
-func (db *T) PutRef(name, ref string, new types.Hash) (e error) {
+func (db *T) PutRef(name, ref string, new repository.Ref) (e error) {
 	writable(&e, db, func(dbtx *bolt.Tx) bool {
 		bucket, e := dbtx.CreateBucketIfNotExists([]byte("repositories"))
 		if e != nil {
@@ -111,21 +110,21 @@ func (db *T) PutRef(name, ref string, new types.Hash) (e error) {
 	return
 }
 
-func (db *T) GetRef(name, ref string) (h types.Hash, e error) {
+func (db *T) GetRef(name, ref string) (h repository.Ref, e error) {
 	readable(&e, db, func(dbtx *bolt.Tx) {
 		bucket := dbtx.Bucket([]byte("repositories"))
 		if bucket == nil {
-			h = types.EmptyHash() // return no error because there were no repositories saved
+			h = repository.EmptyRef() // return no error because there were no repositories saved
 			return
 		}
 		bucket = dbtx.Bucket(append([]byte("refs"), []byte(name)...))
 		if bucket == nil {
-			h = types.EmptyHash() // return no error because there were no repositories saved
+			h = repository.EmptyRef() // return no error because there were no repositories saved
 			return
 		}
 		h = bucket.Get([]byte(ref))
 		if h == nil {
-			h = types.EmptyHash()
+			h = repository.EmptyRef()
 		}
 	})
 	return

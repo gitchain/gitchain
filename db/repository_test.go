@@ -124,7 +124,7 @@ func TestPutGetRef(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting repository ref: %v", err)
 	}
-	assert.True(t, bytes.Compare(ref0, types.EmptyHash()) == 0)
+	assert.True(t, ref0.Equals(repository.EmptyRef()))
 
 	ref := util.SHA160([]byte("random"))
 	err = db.PutRef("myrepo", "refs/heads/master", ref)

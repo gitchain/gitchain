@@ -12,6 +12,8 @@ const (
 	ACTIVE  = 1
 )
 
+type Ref []byte
+
 type T struct {
 	Name             string
 	Status           int
@@ -35,4 +37,12 @@ func Decode(encoded []byte) (*T, error) {
 	enc := gob.NewDecoder(buf)
 	err := enc.Decode(&t)
 	return &t, err
+}
+
+func EmptyRef() Ref {
+	return make([]byte, 20)
+}
+
+func (r Ref) Equals(r1 Ref) bool {
+	return bytes.Compare(r, r1) == 0
 }
