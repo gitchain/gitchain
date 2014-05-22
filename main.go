@@ -17,7 +17,7 @@ import (
 	"github.com/gorilla/rpc/json"
 )
 
-var configFile, dataPath, liveUI, netHostname string
+var configFile, dataPath, assets, netHostname string
 var httpPort, netPort int
 
 func jsonrpc(config *server.Config, method string, req, res interface{}) error {
@@ -37,7 +37,7 @@ func jsonrpc(config *server.Config, method string, req, res interface{}) error {
 func main() {
 	flag.StringVar(&configFile, "config", "", "path to a config file")
 	flag.StringVar(&dataPath, "data-path", "gitchain.db", "path to the data directory, defaults to gitchain.db")
-	flag.StringVar(&liveUI, "development-mode-ui", "", "path to the ui directory, only for development")
+	flag.StringVar(&assets, "development-mode-assets", "", "path to the assets (ui) directory, only for development")
 	flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
 	flag.IntVar(&netPort, "net-port", 31000, "Gitchain network port to serve on")
 	flag.StringVar(&netHostname, "net-hostname", "", "Gitchain network hostname")
@@ -51,6 +51,7 @@ func main() {
 	config.General.DataPath = dataPath
 	config.General.DataPath = dataPath
 	config.API.HttpPort = httpPort
+	config.API.DevelopmentModeAssets = assets
 	config.Network.Hostname = netHostname
 	config.Network.Port = netPort
 
@@ -247,7 +248,7 @@ func main() {
 	case "Serve":
 		fallthrough
 	default:
-		srv := &server.T{Config: config, LiveUI: liveUI}
+		srv := &server.T{Config: config}
 		err := srv.Init()
 		if err != nil {
 			log.Printf("Error during server initialization: %v", err) // don't use log15 here

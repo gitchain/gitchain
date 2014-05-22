@@ -30,8 +30,8 @@ func Start(srv *server.T) {
 		resp.Header().Add("Content-Type", "text/html")
 		var content []byte
 
-		if len(srv.LiveUI) > 0 {
-			content, _ = ioutil.ReadFile(path.Join(srv.LiveUI, "index.html"))
+		if len(srv.Config.API.DevelopmentModeAssets) > 0 {
+			content, _ = ioutil.ReadFile(path.Join(srv.Config.API.DevelopmentModeAssets, "index.html"))
 		} else {
 			content, _ = ui.Asset("index.html")
 		}
@@ -42,8 +42,8 @@ func Start(srv *server.T) {
 		ext := filepath.Ext(file)
 		resp.Header().Add("Content-Type", mime.TypeByExtension(ext))
 		var content []byte
-		if len(srv.LiveUI) > 0 {
-			content, _ = ioutil.ReadFile(path.Join(srv.LiveUI, file))
+		if len(srv.Config.API.DevelopmentModeAssets) > 0 {
+			content, _ = ioutil.ReadFile(path.Join(srv.Config.API.DevelopmentModeAssets, file))
 		} else {
 			content, _ = ui.Asset(file)
 		}

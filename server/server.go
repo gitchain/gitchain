@@ -10,7 +10,6 @@ import (
 
 type T struct {
 	Config *Config
-	LiveUI string
 	DB     *db.T
 	Log    log15.Logger
 }

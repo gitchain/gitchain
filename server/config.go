@@ -7,7 +7,8 @@ type Config struct {
 		DataPath string `gcfg:"data-path"`
 	}
 	API struct {
-		HttpPort int `gcfg:"http-port"`
+		HttpPort              int    `gcfg:"http-port"`
+		DevelopmentModeAssets string `gcfg:"development-mode-assets"`
 	}
 	Network struct {
 		Port     int
