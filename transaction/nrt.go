@@ -48,6 +48,6 @@ func (txn *NameReservation) Encode() ([]byte, error) {
 	return encode(txn)
 }
 
-func (txn *NameReservation) Hash() []byte {
+func (txn *NameReservation) Hash() types.Hash {
 	return hash(txn)
 }

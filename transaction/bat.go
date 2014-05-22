@@ -4,6 +4,8 @@ package transaction
 import (
 	"encoding/gob"
 	"encoding/json"
+
+	"github.com/gitchain/gitchain/types"
 )
 
 func init() {
@@ -40,6 +42,6 @@ func (txn *BlockAttribution) Encode() ([]byte, error) {
 	return encode(txn)
 }
 
-func (txn *BlockAttribution) Hash() []byte {
+func (txn *BlockAttribution) Hash() types.Hash {
 	return hash(txn)
 }

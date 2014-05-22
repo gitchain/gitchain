@@ -5,6 +5,8 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
+
+	"github.com/gitchain/gitchain/types"
 )
 
 func init() {
@@ -46,6 +48,6 @@ func (txn *NameAllocation) Encode() ([]byte, error) {
 	return encode(txn)
 }
 
-func (txn *NameAllocation) Hash() []byte {
+func (txn *NameAllocation) Hash() types.Hash {
 	return hash(txn)
 }

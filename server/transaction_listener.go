@@ -74,6 +74,8 @@ loop:
 		if err != nil {
 			log.Printf("Error while recording transaction %x: %v", msg.Hash(), err)
 		}
+		// notify internal components about a transaction in the working memory
+		router.Send("/transaction/mem", make(chan *transaction.Envelope), msg)
 
 		miningEmpty = false
 		transactionsPool = append(transactionsPool, msg)

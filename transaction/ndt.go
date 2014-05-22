@@ -4,6 +4,8 @@ package transaction
 import (
 	"encoding/gob"
 	"encoding/json"
+
+	"github.com/gitchain/gitchain/types"
 )
 
 func init() {
@@ -41,6 +43,6 @@ func (txn *NameDeallocation) Encode() ([]byte, error) {
 	return encode(txn)
 }
 
-func (txn *NameDeallocation) Hash() []byte {
+func (txn *NameDeallocation) Hash() types.Hash {
 	return hash(txn)
 }

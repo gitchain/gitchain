@@ -54,6 +54,6 @@ func (txn *ReferenceUpdate) Encode() ([]byte, error) {
 	return encode(txn)
 }
 
-func (txn *ReferenceUpdate) Hash() []byte {
+func (txn *ReferenceUpdate) Hash() types.Hash {
 	return hash(txn)
 }

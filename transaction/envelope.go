@@ -32,7 +32,7 @@ func NewEnvelope(prev types.Hash, txn T, args ...[]byte) *Envelope {
 	return e
 }
 
-func (e *Envelope) Hash() []byte {
+func (e *Envelope) Hash() types.Hash {
 	return util.SHA256(append(append(e.Transaction.Hash(), e.PreviousEnvelopeHash...), e.NextPublicKey...))
 }
 

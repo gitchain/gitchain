@@ -6,13 +6,14 @@ import (
 	"encoding/gob"
 
 	"github.com/conformal/fastsha256"
+	"github.com/gitchain/gitchain/types"
 )
 
 //// Interface
 
 type T interface {
 	Encode() ([]byte, error)
-	Hash() []byte
+	Hash() types.Hash
 	Valid() bool
 }
 
