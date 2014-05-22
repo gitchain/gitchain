@@ -8,7 +8,7 @@ import (
 type Hash []byte
 
 func EmptyHash() Hash {
-	return []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	return make([]byte, 32)
 }
 
 func (h Hash) String() string {
