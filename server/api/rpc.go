@@ -13,5 +13,6 @@ func jsonRpcService() *rpc.Server {
 	s.RegisterService(new(BlockService), "")
 	s.RegisterService(new(TransactionService), "")
 	s.RegisterService(new(RepositoryService), "")
+	s.RegisterService(new(NetService), "")
 	return s
 }

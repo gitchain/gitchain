@@ -8,22 +8,23 @@ import (
 )
 
 type T struct {
-	HttpPort int
-	Path     string
-	LiveUI   string
-	DB       *db.T
+	HttpPort    int
+	NetPort     int
+	NetHostname string
+	Path        string
+	LiveUI      string
+	DB          *db.T
 }
 
-func New(httpPort int, dbPath string, liveUI string) (*T, error) {
-	srv := &T{HttpPort: httpPort, Path: dbPath, LiveUI: liveUI}
-	err := os.MkdirAll(dbPath, os.ModeDir|0700)
+func (srv *T) Init() error {
+	err := os.MkdirAll(srv.Path, os.ModeDir|0700)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	database, err := db.NewDB(filepath.Join(dbPath, "db"))
+	database, err := db.NewDB(filepath.Join(srv.Path, "db"))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	srv.DB = database
-	return srv, nil
+	return nil
 }
