@@ -57,7 +57,7 @@ func Start(srv *server.T) {
 
 	http.Handle("/", r)
 
-	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", srv.HttpPort), nil)
+	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", srv.Config.API.HttpPort), nil)
 	if err != nil {
 		log.Crit("error during HTTP server initialization", "err", err)
 	}

@@ -17,15 +17,15 @@ import (
 	"github.com/gorilla/rpc/json"
 )
 
-var dbPath, liveUI, netHostname string
+var configFile, dataPath, liveUI, netHostname string
 var httpPort, netPort int
 
-func jsonrpc(method string, req, res interface{}) error {
+func jsonrpc(config *server.Config, method string, req, res interface{}) error {
 	buf, err := json.EncodeClientRequest(method, req)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/rpc", httpPort), "application/json", bytes.NewBuffer(buf))
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/rpc", config.API.HttpPort), "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}
@@ -35,12 +35,32 @@ func jsonrpc(method string, req, res interface{}) error {
 }
 
 func main() {
-	flag.StringVar(&dbPath, "db", "gitchain.db", "path to a database directory, defaults to gitchain.db")
+	flag.StringVar(&configFile, "config", "", "path to a config file")
+	flag.StringVar(&dataPath, "data-path", "gitchain.db", "path to the data directory, defaults to gitchain.db")
 	flag.StringVar(&liveUI, "development-mode-ui", "", "path to the ui directory, only for development")
 	flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
 	flag.IntVar(&netPort, "net-port", 31000, "Gitchain network port to serve on")
 	flag.StringVar(&netHostname, "net-hostname", "", "Gitchain network hostname")
 	flag.Parse()
+
+	var config *server.Config
+	var err error
+
+	config = server.DefaultConfig()
+
+	config.General.DataPath = dataPath
+	config.General.DataPath = dataPath
+	config.API.HttpPort = httpPort
+	config.Network.Hostname = netHostname
+	config.Network.Port = netPort
+
+	if len(configFile) > 0 {
+		err = server.ReadConfig(configFile, config)
+		if err != nil {
+			log.Printf("Error read config file %s: %v", configFile, err) // don't use log15 here
+			os.Exit(1)
+		}
+	}
 
 	switch flag.Arg(0) {
 	case "GeneratePrivateKey":
@@ -51,7 +71,7 @@ func main() {
 		var alias = flag.Arg(1)
 
 		var resp api.GeneratePrivateKeyReply
-		err := jsonrpc("KeyService.GeneratePrivateKey", &api.GeneratePrivateKeyArgs{Alias: alias}, &resp)
+		err := jsonrpc(config, "KeyService.GeneratePrivateKey", &api.GeneratePrivateKeyArgs{Alias: alias}, &resp)
 		if err != nil {
 			fmt.Printf("Can't generate private key because of %v\n", err)
 			os.Exit(1)
@@ -69,7 +89,7 @@ func main() {
 		}
 		var alias = flag.Arg(1)
 		var resp api.SetMainKeyReply
-		err := jsonrpc("KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
+		err := jsonrpc(config, "KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
 		if err != nil {
 			fmt.Printf("Can't set main private key to %s because of %v\n", alias, err)
 			os.Exit(1)
@@ -82,13 +102,13 @@ func main() {
 
 	case "ListPrivateKeys":
 		var resp api.ListPrivateKeysReply
-		err := jsonrpc("KeyService.ListPrivateKeys", &api.ListPrivateKeysArgs{}, &resp)
+		err := jsonrpc(config, "KeyService.ListPrivateKeys", &api.ListPrivateKeysArgs{}, &resp)
 		if err != nil {
 			fmt.Printf("Can't list private keys because of %v\n", err)
 			os.Exit(1)
 		}
 		var mainKeyResp api.GetMainKeyReply
-		err = jsonrpc("KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
+		err = jsonrpc(config, "KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
 		if err != nil {
 			fmt.Printf("Can't discover main private key because of %v\n", err)
 			os.Exit(1)
@@ -111,7 +131,7 @@ func main() {
 		alias := flag.Arg(1)
 		name := flag.Arg(2)
 		var resp api.NameReservationReply
-		err := jsonrpc("NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: name}, &resp)
+		err := jsonrpc(config, "NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: name}, &resp)
 		if err != nil {
 			fmt.Printf("Can't make a name reservation because of %v\n", err)
 			os.Exit(1)
@@ -126,7 +146,7 @@ func main() {
 		name := flag.Arg(2)
 		random := flag.Arg(3)
 		var resp api.NameAllocationReply
-		err := jsonrpc("NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: name, Random: random}, &resp)
+		err := jsonrpc(config, "NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: name, Random: random}, &resp)
 		if err != nil {
 			fmt.Printf("Can't make a name allocation because of %v\n", err)
 			os.Exit(1)
@@ -134,7 +154,7 @@ func main() {
 		fmt.Printf("Name allocation for %s has been submitted (%s)\n", name, resp.Id)
 	case "ListRepositories":
 		var resp api.ListRepositoriesReply
-		err := jsonrpc("RepositoryService.ListRepositories", &api.ListRepositoriesArgs{}, &resp)
+		err := jsonrpc(config, "RepositoryService.ListRepositories", &api.ListRepositoriesArgs{}, &resp)
 		if err != nil {
 			fmt.Printf("Can't list repositories because of %v\n", err)
 			os.Exit(1)
@@ -144,7 +164,7 @@ func main() {
 		}
 	case "LastBlock":
 		var resp api.GetLastBlockReply
-		err := jsonrpc("BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
+		err := jsonrpc(config, "BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a block because of %v\n", err)
 			os.Exit(1)
@@ -157,7 +177,7 @@ func main() {
 		}
 		hash := flag.Arg(1)
 		var resp api.GetBlockReply
-		err := jsonrpc("BlockService.GetBlock", &api.GetBlockArgs{Hash: hash}, &resp)
+		err := jsonrpc(config, "BlockService.GetBlock", &api.GetBlockArgs{Hash: hash}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a block because of %v\n", err)
 			os.Exit(1)
@@ -172,7 +192,7 @@ func main() {
 		}
 		hash := flag.Arg(1)
 		var resp api.BlockTransactionsReply
-		err := jsonrpc("BlockService.BlockTransactions", &api.BlockTransactionsArgs{Hash: hash}, &resp)
+		err := jsonrpc(config, "BlockService.BlockTransactions", &api.BlockTransactionsArgs{Hash: hash}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a list of block transactions because of %v\n", err)
 			os.Exit(1)
@@ -187,7 +207,7 @@ func main() {
 		}
 		hash := flag.Arg(1)
 		var resp api.GetTransactionReply
-		err := jsonrpc("TransactionService.GetTransaction", &api.GetTransactionArgs{Hash: hash}, &resp)
+		err := jsonrpc(config, "TransactionService.GetTransaction", &api.GetTransactionArgs{Hash: hash}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a transaction because of %v\n", err)
 			os.Exit(1)
@@ -219,7 +239,7 @@ func main() {
 		}
 		host := flag.Arg(1)
 		var resp api.JoinReply
-		err := jsonrpc("NetService.Join", &api.JoinArgs{Host: host}, &resp)
+		err := jsonrpc(config, "NetService.Join", &api.JoinArgs{Host: host}, &resp)
 		if err != nil {
 			fmt.Printf("Can't join because of %v\n", err)
 			os.Exit(1)
@@ -227,7 +247,7 @@ func main() {
 	case "Serve":
 		fallthrough
 	default:
-		srv := &server.T{HttpPort: httpPort, NetPort: netPort, NetHostname: netHostname, Path: dbPath, LiveUI: liveUI}
+		srv := &server.T{Config: config, LiveUI: liveUI}
 		err := srv.Init()
 		if err != nil {
 			log.Printf("Error during server initialization: %v", err) // don't use log15 here

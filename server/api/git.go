@@ -47,7 +47,7 @@ func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
 		} else {
 			enc.Encode(append([]byte{1}, pktlineToBytes([]byte("unpack ok"))...))
 			for i := range packfile.Objects {
-				err = git.WriteObject(packfile.Objects[i], path.Join(srv.Path, "objects"))
+				err = git.WriteObject(packfile.Objects[i], path.Join(srv.Config.General.DataPath, "objects"))
 				if err != nil {
 					enc.Encode(append([]byte{3}, []byte(fmt.Sprintf("Error while writing object: %v\n", err))...))
 				}

@@ -176,8 +176,8 @@ func DHTServer(srv *T) {
 		os.Exit(0)
 	}
 
-	hostname := strings.Split(srv.NetHostname, ":")[0]
-	node := wendy.NewNode(id, "127.0.0.1", hostname, "localhost", srv.NetPort)
+	hostname := strings.Split(srv.Config.Network.Hostname, ":")[0]
+	node := wendy.NewNode(id, "127.0.0.1", hostname, "localhost", srv.Config.Network.Port)
 
 	cluster := wendy.NewCluster(node, keyAuth)
 	cluster.SetLogLevel(wendy.LogLevelError)
@@ -186,6 +186,11 @@ func DHTServer(srv *T) {
 	defer cluster.Stop()
 
 	log.Info("node started")
+
+	for i := range srv.Config.Network.Join {
+		log.Info("scheduling a connection", "addr", srv.Config.Network.Join[i])
+		router.Send("/dht/join", make(chan string), srv.Config.Network.Join[i])
+	}
 
 loop:
 	select {

@@ -9,21 +9,18 @@ import (
 )
 
 type T struct {
-	HttpPort    int
-	NetPort     int
-	NetHostname string
-	Path        string
-	LiveUI      string
-	DB          *db.T
-	Log         log15.Logger
+	Config *Config
+	LiveUI string
+	DB     *db.T
+	Log    log15.Logger
 }
 
 func (srv *T) Init() error {
-	err := os.MkdirAll(srv.Path, os.ModeDir|0700)
+	err := os.MkdirAll(srv.Config.General.DataPath, os.ModeDir|0700)
 	if err != nil {
 		return err
 	}
-	database, err := db.NewDB(filepath.Join(srv.Path, "db"))
+	database, err := db.NewDB(filepath.Join(srv.Config.General.DataPath, "db"))
 	if err != nil {
 		return err
 	}

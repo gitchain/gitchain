@@ -1,3 +1,4 @@
 /gitchain
 /gitchain*.db
+/*.config
 /tmp
