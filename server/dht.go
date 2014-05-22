@@ -67,9 +67,10 @@ func DHTServer(srv *T) {
 	node := wendy.NewNode(id, "127.0.0.1", hostname, "localhost", srv.NetPort)
 
 	cluster := wendy.NewCluster(node, &Credentials{})
-	cluster.SetLogLevel(wendy.LogLevelDebug)
+	cluster.SetLogLevel(wendy.LogLevelError)
 	cluster.RegisterCallback(&GitchainApp{})
 	go cluster.Listen()
+	defer cluster.Stop()
 loop:
 	select {
 	case existing := <-ch:
