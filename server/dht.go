@@ -67,7 +67,7 @@ func DHTServer(srv *T) {
 	node := wendy.NewNode(id, "127.0.0.1", hostname, "localhost", srv.NetPort)
 
 	cluster := wendy.NewCluster(node, &Credentials{})
-	cluster.SetLogLevel(wendy.LogLevelError)
+	cluster.SetLogLevel(wendy.LogLevelDebug)
 	cluster.RegisterCallback(&GitchainApp{})
 	go cluster.Listen()
 loop:
@@ -84,9 +84,6 @@ loop:
 				goto loop
 			}
 		}
-		// log.Printf("Stopping the existing cluster...")
-		// cluster.Kill()
-		// log.Printf("Stopped the existing cluster")
 		err = cluster.Join(addr[0], port)
 
 		if err != nil {
