@@ -2,13 +2,17 @@ package server
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"encoding/gob"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
@@ -22,14 +26,44 @@ const (
 	MSG_TRANSACTION byte = 0x01
 )
 
-type Credentials struct{}
-
-func (*Credentials) Marshal() []byte {
-	return []byte{}
+type KeyAuth struct {
+	key *ecdsa.PrivateKey
 }
 
-func (*Credentials) Valid([]byte) bool {
-	return true
+func newKeyAuth() (ka *KeyAuth, e error) {
+	pk, e := keys.GenerateECDSA()
+	ka = &KeyAuth{key: pk}
+	return
+}
+
+func (a *KeyAuth) Marshal() []byte {
+	key, err := keys.EncodeECDSAPublicKey(&a.key.PublicKey)
+	if err != nil {
+		panic(err) // TODO: better error handling
+	}
+	sigR, sigS, err := ecdsa.Sign(rand.Reader, a.key, util.SHA256(key))
+	if err != nil {
+		panic(err) // TODO: better error handling
+	}
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	enc.Encode([][]byte{key, sigR.Bytes(), sigS.Bytes()})
+	return buf.Bytes()
+}
+
+func (*KeyAuth) Valid(b []byte) bool {
+	var data [][]byte
+	dec := gob.NewDecoder(bytes.NewBuffer(b))
+	dec.Decode(&data)
+	publicKey, err := keys.DecodeECDSAPublicKey(data[0])
+	if err != nil {
+		panic(err) // TODO: better error handling
+	}
+	r := new(big.Int)
+	s := new(big.Int)
+	r.SetBytes(data[1])
+	s.SetBytes(data[2])
+	return ecdsa.Verify(publicKey, util.SHA256(data[0]), r, s)
 }
 
 type GitchainApp struct {
@@ -119,15 +153,25 @@ func DHTServer(srv *T) {
 	tch := make(chan *transaction.Envelope)
 	_, err = router.PermanentSubscribe("/transaction/mem", tch)
 
-	id, err := wendy.NodeIDFromBytes(util.SHA160([]byte(srv.NetHostname)))
+	keyAuth, err := newKeyAuth()
+	if err != nil {
+		log.Printf("Can't generate node key: %v", err)
+		os.Exit(1)
+	}
+
+	id, err := wendy.NodeIDFromBytes(util.SHA256(keyAuth.Marshal()))
+
 	if err != nil {
 		log.Printf("Error preparing node ID: %v", err)
 		os.Exit(0)
 	}
+
+	log.Printf("node id %v", id)
+
 	hostname := strings.Split(srv.NetHostname, ":")[0]
 	node := wendy.NewNode(id, "127.0.0.1", hostname, "localhost", srv.NetPort)
 
-	cluster := wendy.NewCluster(node, &Credentials{})
+	cluster := wendy.NewCluster(node, keyAuth)
 	cluster.SetLogLevel(wendy.LogLevelError)
 	cluster.RegisterCallback(&GitchainApp{cluster: cluster})
 	go cluster.Listen()
