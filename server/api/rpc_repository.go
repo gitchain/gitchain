@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/repository"
+	"github.com/gitchain/gitchain/server"
+	"github.com/inconshreveable/log15"
 )
 
 type repo struct {
@@ -13,7 +15,10 @@ type repo struct {
 	NameAllocationTx string
 }
 
-type RepositoryService struct{}
+type RepositoryService struct {
+	srv *server.T
+	log log15.Logger
+}
 
 type ListRepositoriesArgs struct {
 }
@@ -27,10 +32,10 @@ var status = map[int]string{
 	repository.ACTIVE:  "active",
 }
 
-func (*RepositoryService) ListRepositories(r *http.Request, args *ListRepositoriesArgs, reply *ListRepositoriesReply) error {
-	repos := srv.DB.ListRepositories()
+func (service *RepositoryService) ListRepositories(r *http.Request, args *ListRepositoriesArgs, reply *ListRepositoriesReply) error {
+	repos := service.srv.DB.ListRepositories()
 	for i := range repos {
-		r, err := srv.DB.GetRepository(repos[i])
+		r, err := service.srv.DB.GetRepository(repos[i])
 		if err != nil {
 			return err
 		}

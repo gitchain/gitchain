@@ -5,8 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/gob"
-	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"strconv"
@@ -18,6 +16,7 @@ import (
 	"github.com/gitchain/gitchain/types"
 	"github.com/gitchain/gitchain/util"
 	"github.com/gitchain/wendy"
+	"github.com/inconshreveable/log15"
 )
 
 const (
@@ -68,6 +67,7 @@ func (*KeyAuth) Valid(b []byte) bool {
 
 type GitchainApp struct {
 	cluster *wendy.Cluster
+	log     log15.Logger
 }
 
 func (app *GitchainApp) OnError(err error) {
@@ -75,20 +75,23 @@ func (app *GitchainApp) OnError(err error) {
 }
 
 func (app *GitchainApp) OnDeliver(msg wendy.Message) {
+	log := app.log
 	var err error
 	if msg.Purpose&MSG_BROADCAST != 0 {
+		log.Debug("received a broadcast")
 		var envelope broadcastEnvelope
 		dec := gob.NewDecoder(bytes.NewBuffer(msg.Value))
 		dec.Decode(&envelope)
 		if err != nil {
-			log.Printf("Error while decoding message: %v", err)
+			log.Error("error while decoding an incoming message", "err", err)
 		} else {
 			if msg.Purpose&MSG_TRANSACTION != 0 {
 				var txne *transaction.Envelope
 				if txne, err = transaction.DecodeEnvelope(envelope.Content); err != nil {
-					log.Printf("Error while decoding transaction: %v", err)
+					log.Error("error while decoding transaction", "err", err)
 				} else {
 					router.Send("/transaction", make(chan *transaction.Envelope), txne)
+					log.Debug("announced transaction locally", "txn", txne)
 				}
 			}
 			var newLimit wendy.NodeID
@@ -107,7 +110,7 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 					}
 					wmsg := app.cluster.NewMessage(msg.Purpose, nodes[i].ID, buf.Bytes())
 					if err = app.cluster.Send(wmsg); err != nil {
-						log.Printf("Error sending message: %v", err)
+						log.Error("error sending message", "err", err)
 					}
 				} else {
 					break
@@ -121,7 +124,7 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 				}
 				wmsg := app.cluster.NewMessage(msg.Purpose, nodes[len(nodes)-1].ID, buf.Bytes())
 				if err = app.cluster.Send(wmsg); err != nil {
-					log.Printf("Error sending message: %v", err)
+					log.Error("error sending message", "err", err)
 				}
 			}
 
@@ -137,17 +140,19 @@ func (app *GitchainApp) OnNewLeaves(leaves []*wendy.Node) {
 }
 
 func (app *GitchainApp) OnNodeJoin(node wendy.Node) {
-	log.Println("Node joined: ", node.ID)
+	app.log.Info("node joined", "node", node.ID)
 }
 
 func (app *GitchainApp) OnNodeExit(node wendy.Node) {
-	log.Println("Node left: ", node.ID)
+	app.log.Info("node left", "node", node.ID)
 }
 
 func (app *GitchainApp) OnHeartbeat(node wendy.Node) {
 }
 
 func DHTServer(srv *T) {
+	log := srv.Log.New("cmp", "dht")
+
 	ch := make(chan string)
 	_, err := router.PermanentSubscribe("/dht/join", ch)
 	tch := make(chan *transaction.Envelope)
@@ -155,51 +160,53 @@ func DHTServer(srv *T) {
 
 	keyAuth, err := newKeyAuth()
 	if err != nil {
-		log.Printf("Can't generate node key: %v", err)
+		log.Crit("can't generate node key", "err", err)
 		os.Exit(1)
 	}
 
 	id, err := wendy.NodeIDFromBytes(util.SHA256(keyAuth.Marshal()))
+	log = log.New("own_node", id)
 
 	if err != nil {
-		log.Printf("Error preparing node ID: %v", err)
+		log15.Crit("error preparing node id", "err", err)
 		os.Exit(0)
 	}
-
-	log.Printf("node id %v", id)
 
 	hostname := strings.Split(srv.NetHostname, ":")[0]
 	node := wendy.NewNode(id, "127.0.0.1", hostname, "localhost", srv.NetPort)
 
 	cluster := wendy.NewCluster(node, keyAuth)
 	cluster.SetLogLevel(wendy.LogLevelError)
-	cluster.RegisterCallback(&GitchainApp{cluster: cluster})
+	cluster.RegisterCallback(&GitchainApp{cluster: cluster, log: log.New()})
 	go cluster.Listen()
 	defer cluster.Stop()
+
+	log.Info("node started")
+
 loop:
 	select {
 	case existing := <-ch:
-		log.Printf("Received a request to join the cluster at %s", existing)
+		log.Debug("received a request to join the cluster", "address", existing)
 
 		addr := strings.Split(existing, ":")
 		port := 31000
 		if len(addr) == 2 {
 			port, err = strconv.Atoi(addr[1])
 			if err != nil {
-				fmt.Printf("Invalid port in %s: %v, ignoring the join request", addr[1], err)
+				log.Error("invalid port number", "address", existing, "port", addr[1], "err", err)
 				goto loop
 			}
 		}
 		err = cluster.Join(addr[0], port)
 
 		if err != nil {
-			log.Printf("Error while joining cluster at %s: %v, becoming a disconnected node", existing, err)
+			log.Error("can't join cluster", "address", existing, "err", err)
 			goto loop
 		}
-		log.Printf("Join request has been sent")
 	case txe := <-tch:
+		log.Debug("received transaction", "txn", txe)
 		if err = broadcast(cluster, txe, MSG_TRANSACTION); err != nil {
-			log.Println(err)
+			log.Error("error broadcasting a transaction message", "txn", txe)
 		}
 	}
 	goto loop

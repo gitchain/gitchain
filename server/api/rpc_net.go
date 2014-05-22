@@ -4,9 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/router"
+	"github.com/gitchain/gitchain/server"
+	"github.com/inconshreveable/log15"
 )
 
-type NetService struct{}
+type NetService struct {
+	srv *server.T
+	log log15.Logger
+}
 
 type JoinArgs struct {
 	Host string

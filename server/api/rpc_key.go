@@ -4,10 +4,15 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/keys"
+	"github.com/gitchain/gitchain/server"
+	"github.com/inconshreveable/log15"
 )
 
 // KeySerice
-type KeyService struct{}
+type KeyService struct {
+	srv *server.T
+	log log15.Logger
+}
 
 type GeneratePrivateKeyArgs struct {
 	Alias string
@@ -18,13 +23,13 @@ type GeneratePrivateKeyReply struct {
 	PublicKey string
 }
 
-func (*KeyService) GeneratePrivateKey(r *http.Request, args *GeneratePrivateKeyArgs, reply *GeneratePrivateKeyReply) error {
+func (service *KeyService) GeneratePrivateKey(r *http.Request, args *GeneratePrivateKeyArgs, reply *GeneratePrivateKeyReply) error {
 	key, err := keys.GenerateECDSA()
 	if err != nil {
 		reply.Success = false
 		return err
 	}
-	err = srv.DB.PutKey(args.Alias, key, false)
+	err = service.srv.DB.PutKey(args.Alias, key, false)
 	if err != nil {
 		reply.Success = false
 		return err
@@ -41,8 +46,8 @@ type ListPrivateKeysReply struct {
 	Aliases []string
 }
 
-func (*KeyService) ListPrivateKeys(r *http.Request, args *ListPrivateKeysArgs, reply *ListPrivateKeysReply) error {
-	reply.Aliases = srv.DB.ListKeys()
+func (service *KeyService) ListPrivateKeys(r *http.Request, args *ListPrivateKeysArgs, reply *ListPrivateKeysReply) error {
+	reply.Aliases = service.srv.DB.ListKeys()
 	return nil
 }
 
@@ -54,13 +59,13 @@ type SetMainKeyReply struct {
 	Success bool
 }
 
-func (*KeyService) SetMainKey(r *http.Request, args *SetMainKeyArgs, reply *SetMainKeyReply) error {
-	key, err := srv.DB.GetKey(args.Alias)
+func (service *KeyService) SetMainKey(r *http.Request, args *SetMainKeyArgs, reply *SetMainKeyReply) error {
+	key, err := service.srv.DB.GetKey(args.Alias)
 	if err != nil {
 		return err
 	}
 	if key != nil {
-		err := srv.DB.PutKey(args.Alias, key, true)
+		err := service.srv.DB.PutKey(args.Alias, key, true)
 		if err != nil {
 			return err
 		}
@@ -78,14 +83,14 @@ type GetMainKeyReply struct {
 	Alias string
 }
 
-func (*KeyService) GetMainKey(r *http.Request, args *GetMainKeyArgs, reply *GetMainKeyReply) error {
-	allKeys := srv.DB.ListKeys()
-	mainKey, err := srv.DB.GetMainKey()
+func (service *KeyService) GetMainKey(r *http.Request, args *GetMainKeyArgs, reply *GetMainKeyReply) error {
+	allKeys := service.srv.DB.ListKeys()
+	mainKey, err := service.srv.DB.GetMainKey()
 	if err != nil {
 		return err
 	}
 	for i := range allKeys {
-		key, err := srv.DB.GetKey(allKeys[i])
+		key, err := service.srv.DB.GetKey(allKeys[i])
 		if err != nil {
 			return err
 		}

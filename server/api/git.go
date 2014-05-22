@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"net/http"
 	"path"
 	"strings"
@@ -13,8 +12,10 @@ import (
 	"github.com/gitchain/gitchain/git"
 	"github.com/gitchain/gitchain/repository"
 	"github.com/gitchain/gitchain/router"
+	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gorilla/mux"
+	"github.com/inconshreveable/log15"
 )
 
 func pktlineToBytes(b []byte) []byte {
@@ -24,7 +25,8 @@ func pktlineToBytes(b []byte) []byte {
 	enc.Encode(b)
 	return buf.Bytes()
 }
-func setupGitRoutes(r *mux.Router) {
+func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
+	log = log.New("cmp", "git")
 	// Git Server
 	r.Methods("POST").Path("/{repository:.+}/git-upload-pack").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		resp.WriteHeader(200)
@@ -101,7 +103,7 @@ func setupGitRoutes(r *mux.Router) {
 		reponame := mux.Vars(req)["repository"]
 		repo, err := srv.DB.GetRepository(reponame)
 		if err != nil {
-			log.Printf("git http protocol: error while retrieving repository %s: %v", repo, err)
+			log.Error("error while retrieving repository", "repo", reponame, "err", err)
 			resp.WriteHeader(500)
 			return
 		}
@@ -111,7 +113,7 @@ func setupGitRoutes(r *mux.Router) {
 		}
 		refs, err := srv.DB.ListRefs(reponame)
 		if err != nil {
-			log.Printf("error listing refs for %s: %v", reponame, err)
+			log.Error("error listing refs", "repo", reponame, "err", err)
 			resp.WriteHeader(500)
 			return
 		}
@@ -119,7 +121,7 @@ func setupGitRoutes(r *mux.Router) {
 		for i := range refs {
 			ref, err := srv.DB.GetRef(reponame, refs[i])
 			if err != nil {
-				log.Printf("error getting ref for %s: %v", reponame, err)
+				log.Error("error getting ref", "repo", reponame, "err", err)
 				resp.WriteHeader(500)
 				return
 			}

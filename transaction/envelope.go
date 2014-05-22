@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/gob"
+	"encoding/hex"
 	"math/big"
 
 	"github.com/gitchain/gitchain/keys"
@@ -82,4 +83,8 @@ func DecodeEnvelope(b []byte) (*Envelope, error) {
 	enc := gob.NewDecoder(buf)
 	err := enc.Decode(&t)
 	return t, err
+}
+
+func (e *Envelope) String() string {
+	return hex.EncodeToString(e.Hash())
 }

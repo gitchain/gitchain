@@ -6,11 +6,16 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/keys"
+	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
+	"github.com/inconshreveable/log15"
 )
 
-type TransactionService struct{}
+type TransactionService struct {
+	srv *server.T
+	log log15.Logger
+}
 
 type GetTransactionArgs struct {
 	Hash string
@@ -24,20 +29,20 @@ type GetTransactionReply struct {
 	Content                 string
 }
 
-func (*TransactionService) GetTransaction(r *http.Request, args *GetTransactionArgs, reply *GetTransactionReply) error {
+func (service *TransactionService) GetTransaction(r *http.Request, args *GetTransactionArgs, reply *GetTransactionReply) error {
 	hash, err := hex.DecodeString(args.Hash)
 	if err != nil {
 		return err
 	}
 	var tx *transaction.Envelope
 
-	tx, err = srv.DB.GetTransaction(hash)
+	tx, err = service.srv.DB.GetTransaction(hash)
 	if err != nil {
 		return err
 	}
 
 	if tx == nil {
-		block, err := srv.DB.GetTransactionBlock(hash)
+		block, err := service.srv.DB.GetTransactionBlock(hash)
 		if err != nil {
 			return err
 		}

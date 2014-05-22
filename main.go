@@ -230,7 +230,7 @@ func main() {
 		srv := &server.T{HttpPort: httpPort, NetPort: netPort, NetHostname: netHostname, Path: dbPath, LiveUI: liveUI}
 		err := srv.Init()
 		if err != nil {
-			log.Printf("Error during server initialization: %v", err)
+			log.Printf("Error during server initialization: %v", err) // don't use log15 here
 			os.Exit(1)
 		}
 		go server.DHTServer(srv)

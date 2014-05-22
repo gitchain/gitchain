@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"mime"
 	"net/http"
 	"path"
@@ -14,21 +13,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var srv *server.T
-
-func Start(srvr *server.T) {
-	srv = srvr
+func Start(srv *server.T) {
+	log := srv.Log.New("cmp", "http")
 
 	r := mux.NewRouter()
 
 	// Gitchain API
-	r.Methods("POST").Path("/rpc").HandlerFunc(jsonRpcService().ServeHTTP)
-	r.Methods("GET").Path("/info").HandlerFunc(info)
+	r.Methods("POST").Path("/rpc").HandlerFunc(jsonRpcService(srv, log).ServeHTTP)
+	r.Methods("GET").Path("/info").HandlerFunc(infoHandler(srv, log))
 
-	setupGitRoutes(r)
+	setupGitRoutes(r, srv, log)
 
 	// UI
-	r.Methods("GET").Path("/websocket").HandlerFunc(websocketHandler)
+	r.Methods("GET").Path("/websocket").HandlerFunc(websocketHandler(srv, log))
 	r.Methods("GET").Path("/").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		resp.Header().Add("Content-Type", "text/html")
 		var content []byte
@@ -62,6 +59,6 @@ func Start(srvr *server.T) {
 
 	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", srv.HttpPort), nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Crit("error during HTTP server initialization", "err", err)
 	}
 }

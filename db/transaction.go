@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/boltdb/bolt"
 	"github.com/gitchain/gitchain/block"
@@ -77,7 +76,6 @@ func (db *T) GetNextTransactionHash(hash []byte) (h types.Hash, e error) {
 		bucket := dbtx.Bucket([]byte("blocks"))
 		if bucket != nil {
 			h = bucket.Get(append([]byte(">"), hash...))
-			log.Println(hash, h)
 			if h == nil {
 				h = types.EmptyHash()
 			}

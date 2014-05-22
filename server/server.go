@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/gitchain/gitchain/db"
+	"github.com/inconshreveable/log15"
 )
 
 type T struct {
@@ -14,6 +15,7 @@ type T struct {
 	Path        string
 	LiveUI      string
 	DB          *db.T
+	Log         log15.Logger
 }
 
 func (srv *T) Init() error {
@@ -26,5 +28,6 @@ func (srv *T) Init() error {
 		return err
 	}
 	srv.DB = database
+	srv.Log = log15.New()
 	return nil
 }

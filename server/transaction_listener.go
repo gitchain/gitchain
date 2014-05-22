@@ -2,28 +2,28 @@ package server
 
 import (
 	"bytes"
-	"log"
 	"time"
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
+	"github.com/inconshreveable/log15"
 )
 
-func prepareBAT(srv *T) *transaction.Envelope {
+func prepareBAT(srv *T, log log15.Logger) *transaction.Envelope {
 	key, err := srv.DB.GetMainKey()
 	if err != nil {
-		log.Printf("Error while attempting to retrieve main key: %v", err)
+		log.Error("error while attempting to retrieve main key", "err", err)
 	}
 	if key != nil {
 		bat, err := transaction.NewBlockAttribution()
 		if err != nil {
-			log.Printf("Error while creating a BAT: %v", err)
+			log.Error("error while creating a BAT", "err", err)
 		} else {
 			hash, err := srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
 			if err != nil {
-				log.Printf("Error while creating a BAT: %v", err)
+				log.Error("error while creating a BAT", "err", err)
 			}
 			bate := transaction.NewEnvelope(hash, bat)
 			bate.Sign(key)
@@ -39,6 +39,7 @@ func targetBits() uint32 {
 }
 
 func TransactionListener(srv *T) {
+	log := srv.Log.New("cmp", "txn")
 	var msg *transaction.Envelope
 	var blk *block.Block
 	blockChannel := make(chan *block.Block)
@@ -47,12 +48,12 @@ func TransactionListener(srv *T) {
 	bch := make(chan *block.Block)
 	_, err := router.PermanentSubscribe("/block", bch)
 	if err != nil {
-		log.Printf("Error while subscribing to /block: %v", err)
+		log.Error("error while subscribing to /block", "err", err)
 	}
 	tch := make(chan *transaction.Envelope)
 	_, err = router.PermanentSubscribe("/transaction", tch)
 	if err != nil {
-		log.Printf("Error while subscribing to /transaction: %v", err)
+		log.Error("error while subscribing to /transaction", "err", err)
 	}
 
 	miningEmpty := false
@@ -62,9 +63,10 @@ initPool:
 loop:
 	select {
 	case msg = <-tch:
+		log.Debug("received transaction", "txn", msg)
 		verification, err := msg.Verify()
 		if err != nil {
-			log.Printf("error during transaction verification: %v", err)
+			log.Error("error during transaction verification", "err", err)
 		}
 		if !verification {
 			// discard transaction
@@ -72,7 +74,7 @@ loop:
 		}
 		err = srv.DB.PutTransaction(msg)
 		if err != nil {
-			log.Printf("Error while recording transaction %x: %v", msg.Hash(), err)
+			log.Error("error while recording transaction", "txn", msg, "err", err)
 		}
 		// notify internal components about a transaction in the working memory
 		router.Send("/transaction/mem", make(chan *transaction.Envelope), msg)
@@ -85,13 +87,13 @@ loop:
 			previousBlockHash = blk.Hash()
 		}
 		blockTransactionsPool := make([]*transaction.Envelope, 0)
-		if bat := prepareBAT(srv); bat != nil {
+		if bat := prepareBAT(srv, log); bat != nil {
 			blockTransactionsPool = append(transactionsPool, bat)
 		}
 
 		blk, err := block.NewBlock(previousBlockHash, targetBits(), blockTransactionsPool)
 		if err != nil {
-			log.Printf("Error while creating a new block: %v", err)
+			log.Error("error while creating a new block", "err", err)
 		} else {
 			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
@@ -99,7 +101,7 @@ loop:
 		for i := range blk.Transactions {
 			err = srv.DB.DeleteTransaction(blk.Transactions[i].Hash())
 			if err != nil {
-				log.Printf("Error while deleting transaction %x: %v", blk.Transactions[i].Hash(), err)
+				log.Error("error while deleting transaction", "txn", blk.Transactions[i], "err", err)
 			}
 		}
 	case blk = <-blockChannel:
@@ -114,10 +116,10 @@ loop:
 			// this is a legitimate last block
 			srv.DB.PutBlock(blk, true)
 			if err := router.Send("/block", make(chan *block.Block), blk); err != nil {
-				log.Printf("error while sending block: %v", err)
+				log.Error("error while sending block", "err", err)
 			}
 			if err := router.Send("/block/last", make(chan *block.Block), blk); err != nil {
-				log.Printf("error while sending block: %v", err)
+				log.Error("error while sending block", "err", err)
 			}
 
 		} else {
@@ -135,12 +137,12 @@ loop:
 			} else {
 				previousBlockHash = blk.Hash()
 			}
-			if bat := prepareBAT(srv); bat != nil {
+			if bat := prepareBAT(srv, log); bat != nil {
 				transactionsPool = append(transactionsPool, bat)
 			}
 			blk, err := block.NewBlock(previousBlockHash, targetBits(), transactionsPool)
 			if err != nil {
-				log.Printf("Error while creating a new block: %v", err)
+				log.Error("error while creating a new block", "err", err)
 			} else {
 				miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 				miningEmpty = true

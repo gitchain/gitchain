@@ -2,29 +2,29 @@ package server
 
 import (
 	"bytes"
-	"log"
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/repository"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
+	"github.com/inconshreveable/log15"
 )
 
 const RESERVATION_CONFIRMATIONS_REQUIRED = 3
 const ALLOCATION_CONFIRMATIONS_REQUIRED = 3
 
-func processPendingAllocations(srv *T) {
+func processPendingAllocations(srv *T, log log15.Logger) {
 	pending := srv.DB.ListPendingRepositories()
 	for i := range pending {
 		r, err := srv.DB.GetRepository(pending[i])
 		if err != nil {
-			log.Printf("error while processing pending repository %s: %v", pending[i], err)
+			log.Error("error while processing pending repository", "repo", pending[i], "err", err)
 		}
 		c, err := srv.DB.GetTransactionConfirmations(r.NameAllocationTx)
 		if err != nil {
-			log.Printf("error while calculating pending repository's %s allocation confirmations (%x): %v",
-				pending[i], r.NameAllocationTx, err)
+			log.Error("error while calculating pending repository's allocation confirmations",
+				"repo", pending[i], "txn", r.NameAllocationTx, "err", err)
 		}
 		if c >= ALLOCATION_CONFIRMATIONS_REQUIRED {
 			r.Status = repository.ACTIVE
@@ -46,15 +46,16 @@ func isValidReservation(reservation *transaction.Envelope, alloc *transaction.En
 }
 
 func NameRegistrar(srv *T) {
+	log := srv.Log.New("cmp", "name")
 	ch := make(chan *block.Block)
 	_, err := router.PermanentSubscribe("/block", ch)
 	if err != nil {
-		log.Printf("Error while subscribing to /block: %v", err)
+		log.Error("error while subscribing to /block", "err", err)
 	}
 loop:
 	select {
 	case blk := <-ch:
-		processPendingAllocations(srv)
+		processPendingAllocations(srv, log)
 		for i := range blk.Transactions {
 			tx0 := blk.Transactions[i]
 			tx := tx0.Transaction
@@ -70,7 +71,7 @@ loop:
 					// 1.2 no scrap found, so try searching throughout database
 					curBlock, err := srv.DB.GetLastBlock()
 					if err != nil {
-						log.Printf("can't find last block during name allocation attempt")
+						log.Error("can't find last block during name allocation attempt")
 						break
 					}
 					for curBlock != nil {
@@ -83,7 +84,7 @@ loop:
 						h := curBlock.PreviousBlockHash
 						curBlock, err = srv.DB.GetBlock(h)
 						if err != nil {
-							log.Printf("can't find block %x during name allocation attempt", h)
+							log.Error("can't find block during name allocation attempt", h, "err", err)
 							break
 						}
 					}
@@ -91,7 +92,7 @@ loop:
 				} else {
 					blk, err := srv.DB.GetTransactionBlock(reservation)
 					if err != nil {
-						log.Printf("can't find block for name reservation %x: %v", reservationTx.Hash(), err)
+						log.Error("can't find block for name reservation", "txn", reservationTx, "err", err)
 						break
 					}
 					for i := range blk.Transactions {
@@ -104,14 +105,14 @@ loop:
 				}
 
 				if reservationTx == nil {
-					log.Printf("can't find corresponding name reservation for allocation %x", tx0.Hash())
+					log.Error("can't find corresponding name reservation for allocation", "txn", tx0)
 					break
 				}
 
 				// 2. verify its maturity
 				confirmations, err := srv.DB.GetTransactionConfirmations(reservationTx.Hash())
 				if err != nil {
-					log.Printf("can't compute number of confirmations for reservation %x: %v", reservationTx.Hash(), err)
+					log.Error("can't compute number of confirmations for reservation", "txn", reservationTx, "err", err)
 					break
 				}
 

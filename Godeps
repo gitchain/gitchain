@@ -51,6 +51,11 @@
 			"Rev": "10a95d14a3a215f5e2045d3dbbcd29f1ab209586"
 		},
 		{
+			"ImportPath": "github.com/inconshreveable/log15",
+			"Comment": "v1-5-gccbf579",
+			"Rev": "ccbf579e0146867dd4e9c175c07d9d5585fd7ef3"
+		},
+		{
 			"ImportPath": "github.com/tv42/base58",
 			"Rev": "9d8d9aec618d081c2605406bf8a2fd0528ae59d6"
 		},

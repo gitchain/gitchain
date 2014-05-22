@@ -3,15 +3,19 @@ package api
 import (
 	"encoding/hex"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gitchain/gitchain/router"
+	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
+	"github.com/inconshreveable/log15"
 )
 
-type NameService struct{}
+type NameService struct {
+	srv *server.T
+	log log15.Logger
+}
 
 type NameReservationArgs struct {
 	Alias string
@@ -23,8 +27,9 @@ type NameReservationReply struct {
 	Random string
 }
 
-func (NameService) NameReservation(r *http.Request, args *NameReservationArgs, reply *NameReservationReply) error {
-	key, err := srv.DB.GetKey(args.Alias)
+func (service *NameService) NameReservation(r *http.Request, args *NameReservationArgs, reply *NameReservationReply) error {
+	log := service.log.New("cmp", "api_name")
+	key, err := service.srv.DB.GetKey(args.Alias)
 	if err != nil {
 		return err
 	}
@@ -33,9 +38,9 @@ func (NameService) NameReservation(r *http.Request, args *NameReservationArgs, r
 	}
 	tx, random := transaction.NewNameReservation(args.Name)
 
-	hash, err := srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
+	hash, err := service.srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
 	if err != nil {
-		log.Printf("Error while preparing transaction: %v", err)
+		log.Error("error while preparing transaction", "err", err)
 	}
 	txe := transaction.NewEnvelope(hash, tx)
 	txe.Sign(key)
@@ -44,7 +49,7 @@ func (NameService) NameReservation(r *http.Request, args *NameReservationArgs, r
 	reply.Random = hex.EncodeToString(random)
 	// We save sha(random+name)=txhash to scraps to be able to find
 	// the transaction hash by random and number during allocation
-	srv.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), txe.Hash())
+	service.srv.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), txe.Hash())
 	router.Send("/transaction", make(chan *transaction.Envelope), txe)
 	return nil
 }
@@ -59,8 +64,9 @@ type NameAllocationReply struct {
 	Id string
 }
 
-func (NameService) NameAllocation(r *http.Request, args *NameAllocationArgs, reply *NameAllocationReply) error {
-	key, err := srv.DB.GetKey(args.Alias)
+func (service *NameService) NameAllocation(r *http.Request, args *NameAllocationArgs, reply *NameAllocationReply) error {
+	log := service.log.New("cmp", "api_name")
+	key, err := service.srv.DB.GetKey(args.Alias)
 	if err != nil {
 		return err
 	}
@@ -76,9 +82,9 @@ func (NameService) NameAllocation(r *http.Request, args *NameAllocationArgs, rep
 		return err
 	}
 
-	hash, err := srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
+	hash, err := service.srv.DB.GetPreviousEnvelopeHashForPublicKey(&key.PublicKey)
 	if err != nil {
-		log.Printf("Error while preparing transaction: %v", err)
+		log.Error("error while preparing transaction", "err", err)
 	}
 
 	txe := transaction.NewEnvelope(hash, tx)
