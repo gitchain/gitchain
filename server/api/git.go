@@ -50,6 +50,8 @@ func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
 				err = git.WriteObject(packfile.Objects[i], path.Join(srv.Config.General.DataPath, "objects"))
 				if err != nil {
 					enc.Encode(append([]byte{3}, []byte(fmt.Sprintf("Error while writing object: %v\n", err))...))
+				} else {
+					router.Send("/git/object", make(chan git.Object), packfile.Objects[i])
 				}
 			}
 			for i := range lines {
@@ -86,7 +88,7 @@ func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
 				txe := transaction.NewEnvelope(hash, tx)
 				txe.Sign(key)
 
-				enc.Encode(append([]byte{2}, []byte(fmt.Sprintf("[gitchain] Transaction %x\n", txe.Hash()))...))
+				enc.Encode(append([]byte{2}, []byte(fmt.Sprintf("[gitchain] Transaction %s\n", txe))...))
 				router.Send("/transaction", make(chan *transaction.Envelope), txe)
 				enc.Encode(append([]byte{1}, pktlineToBytes([]byte(fmt.Sprintf("ok %s\n", ref)))...))
 			}

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
+	"github.com/gitchain/gitchain/repository"
 	"github.com/gitchain/gitchain/types"
 )
 
@@ -21,8 +22,8 @@ type ReferenceUpdate struct {
 	Version    uint32
 	Repository string
 	Ref        string
-	Old        types.Hash
-	New        types.Hash
+	Old        repository.Ref
+	New        repository.Ref
 }
 
 func (tx *ReferenceUpdate) MarshalJSON() ([]byte, error) {
@@ -36,7 +37,7 @@ func (tx *ReferenceUpdate) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func NewReferenceUpdate(repository, ref string, old, new types.Hash) *ReferenceUpdate {
+func NewReferenceUpdate(repository, ref string, old, new repository.Ref) *ReferenceUpdate {
 	return &ReferenceUpdate{
 		Version:    REFERENCE_UPDATE_VERSION,
 		Repository: repository,

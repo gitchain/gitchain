@@ -7,9 +7,11 @@ import (
 	"encoding/gob"
 	"math/big"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
+	"github.com/gitchain/gitchain/git"
 	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
@@ -23,6 +25,7 @@ const (
 	MSG_BROADCAST   byte = 0x80
 	MSG_REGULAR     byte = 0x40
 	MSG_TRANSACTION byte = 0x01
+	MSG_OBJECT      byte = 0x02
 )
 
 type KeyAuth struct {
@@ -68,6 +71,7 @@ func (*KeyAuth) Valid(b []byte) bool {
 type GitchainApp struct {
 	cluster *wendy.Cluster
 	log     log15.Logger
+	srv     *T
 }
 
 func (app *GitchainApp) OnError(err error) {
@@ -96,26 +100,28 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 			}
 			var newLimit wendy.NodeID
 			nodes := app.cluster.RoutingTableNodes()
-			for i := range nodes[0 : len(nodes)-2] {
-				var buf bytes.Buffer
-				enc := gob.NewEncoder(&buf)
-				if nodes[i].ID.Less(envelope.Limit) {
-					if nodes[i+1].ID.Less(envelope.Limit) {
-						newLimit = nodes[i+1].ID
+			if len(nodes) > 1 {
+				for i := range nodes[0 : len(nodes)-1] {
+					var buf bytes.Buffer
+					enc := gob.NewEncoder(&buf)
+					if nodes[i].ID.Less(envelope.Limit) {
+						if nodes[i+1].ID.Less(envelope.Limit) {
+							newLimit = nodes[i+1].ID
+						} else {
+							newLimit = envelope.Limit
+						}
+						if err = enc.Encode(broadcastEnvelope{Content: envelope.Content, Limit: newLimit}); err != nil {
+							return
+						}
+						wmsg := app.cluster.NewMessage(msg.Purpose, nodes[i].ID, buf.Bytes())
+						if err = app.cluster.Send(wmsg); err != nil {
+							log.Error("error sending message", "err", err)
+						} else {
+							log.Debug("forwarded transaction", "txn", txe)
+						}
 					} else {
-						newLimit = envelope.Limit
+						break
 					}
-					if err = enc.Encode(broadcastEnvelope{Content: envelope.Content, Limit: newLimit}); err != nil {
-						return
-					}
-					wmsg := app.cluster.NewMessage(msg.Purpose, nodes[i].ID, buf.Bytes())
-					if err = app.cluster.Send(wmsg); err != nil {
-						log.Error("error sending message", "err", err)
-					} else {
-						log.Debug("forwarded transaction", "txn", txe)
-					}
-				} else {
-					break
 				}
 			}
 			if nodes[len(nodes)-1].ID.Less(envelope.Limit) {
@@ -132,6 +138,15 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 				}
 			}
 
+		}
+	} else {
+		switch {
+		case msg.Purpose&MSG_OBJECT != 0:
+			obj := git.DecodeObject(msg.Value)
+			err = git.WriteObject(obj, path.Join(app.srv.Config.General.DataPath, "objects"))
+			if err != nil {
+				log.Error("error while writing object", "obj", obj, "err", err)
+			}
 		}
 	}
 }
@@ -159,8 +174,12 @@ func DHTServer(srv *T) {
 
 	ch := make(chan string)
 	_, err := router.PermanentSubscribe("/dht/join", ch)
+
 	tch := make(chan *transaction.Envelope)
 	_, err = router.PermanentSubscribe("/transaction/mem", tch)
+
+	och := make(chan git.Object)
+	_, err = router.PermanentSubscribe("/git/object", och)
 
 	keyAuth, err := newKeyAuth()
 	if err != nil {
@@ -181,7 +200,7 @@ func DHTServer(srv *T) {
 
 	cluster := wendy.NewCluster(node, keyAuth)
 	cluster.SetLogLevel(wendy.LogLevelError)
-	cluster.RegisterCallback(&GitchainApp{cluster: cluster, log: log.New()})
+	cluster.RegisterCallback(&GitchainApp{cluster: cluster, log: log.New(), srv: srv})
 	go cluster.Listen()
 	defer cluster.Stop()
 
@@ -215,9 +234,21 @@ loop:
 	case txe := <-tch:
 		log.Debug("received transaction", "txn", txe)
 		if err = broadcast(cluster, txe, MSG_TRANSACTION); err != nil {
-			log.Error("error broadcasting a transaction message", "txn", txe)
+			log.Error("error broadcasting a transaction message", "txn", txe, "err", err)
+		} else {
+			log.Debug("broadcasted transaction", "txn", txe)
 		}
-		log.Debug("broadcasted transaction", "txn", txe)
+	case obj := <-och:
+		id, err := wendy.NodeIDFromBytes(util.SHA256(obj.Hash()))
+		if err != nil {
+			log15.Error("error preparing msg id for a git object", "obj", obj, "err", err)
+		} else {
+			msg := cluster.NewMessage(MSG_OBJECT, id, git.ObjectToBytes(obj))
+			if err = cluster.Send(msg); err != nil {
+				log.Error("error sending git object", "obj", obj, "err", err)
+			}
+		}
+
 	}
 	goto loop
 }

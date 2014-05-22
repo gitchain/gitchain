@@ -8,7 +8,6 @@ import (
 	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
-	"github.com/gitchain/gitchain/types"
 	"github.com/inconshreveable/log15"
 )
 

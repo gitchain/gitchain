@@ -3,6 +3,7 @@ package repository
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/hex"
 
 	"github.com/gitchain/gitchain/types"
 )
@@ -45,4 +46,8 @@ func EmptyRef() Ref {
 
 func (r Ref) Equals(r1 Ref) bool {
 	return bytes.Compare(r, r1) == 0
+}
+
+func (r Ref) String() string {
+	return hex.EncodeToString(r)
 }

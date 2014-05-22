@@ -120,6 +120,10 @@ func Decode(encoded []byte) (*Block, error) {
 	return &blk, err
 }
 
+func (b *Block) String() string {
+	return hex.EncodeToString(b.Hash())
+}
+
 func merkleRoot(data [][]byte) (types.Hash, error) {
 	tree := merkle.NewTree()
 	err := tree.Generate(data, fastsha256.New())

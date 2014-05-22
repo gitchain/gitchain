@@ -140,7 +140,7 @@ func main() {
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord the above transaction hash and following random number for use during allocation: %s\n", name, resp.Id, resp.Random)
 	case "NameAllocation":
 		if flag.NArg() < 4 {
-			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name> <random or reservation tx hash>")
+			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name> <random>")
 			os.Exit(1)
 		}
 		alias := flag.Arg(1)

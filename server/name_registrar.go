@@ -29,6 +29,7 @@ func processPendingAllocations(srv *T, log log15.Logger) {
 		if c >= ALLOCATION_CONFIRMATIONS_REQUIRED {
 			r.Status = repository.ACTIVE
 			srv.DB.PutRepository(r)
+			log.Info("activated repository", "repo", pending[i], "alloc_txn", r.NameAllocationTx)
 		}
 
 	}
@@ -61,6 +62,7 @@ loop:
 			tx := tx0.Transaction
 			switch tx.(type) {
 			case *transaction.NameAllocation:
+				log.Debug("processing name allocation transaction", "txn", tx0)
 				tx1 := tx.(*transaction.NameAllocation)
 				// 1. find the reservation
 				// 1.1. check if it was done with this server and there's a reference
@@ -119,6 +121,7 @@ loop:
 				if confirmations >= RESERVATION_CONFIRMATIONS_REQUIRED {
 					// this reservation is confirmed
 					srv.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx0.Hash()))
+					log.Info("created pending repository", "repo", tx1.Name, "alloc_txn", tx0)
 				} else {
 					// this allocation is wasted as the distance is not long enough
 				}
