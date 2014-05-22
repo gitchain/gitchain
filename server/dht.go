@@ -85,13 +85,13 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 		if err != nil {
 			log.Error("error while decoding an incoming message", "err", err)
 		} else {
+			var txe *transaction.Envelope
 			if msg.Purpose&MSG_TRANSACTION != 0 {
-				var txne *transaction.Envelope
-				if txne, err = transaction.DecodeEnvelope(envelope.Content); err != nil {
+				if txe, err = transaction.DecodeEnvelope(envelope.Content); err != nil {
 					log.Error("error while decoding transaction", "err", err)
 				} else {
-					router.Send("/transaction", make(chan *transaction.Envelope), txne)
-					log.Debug("announced transaction locally", "txn", txne)
+					router.Send("/transaction", make(chan *transaction.Envelope), txe)
+					log.Debug("announced transaction locally", "txn", txe)
 				}
 			}
 			var newLimit wendy.NodeID
@@ -111,6 +111,8 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 					wmsg := app.cluster.NewMessage(msg.Purpose, nodes[i].ID, buf.Bytes())
 					if err = app.cluster.Send(wmsg); err != nil {
 						log.Error("error sending message", "err", err)
+					} else {
+						log.Debug("forwarded transaction", "txn", txe)
 					}
 				} else {
 					break
@@ -125,6 +127,8 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 				wmsg := app.cluster.NewMessage(msg.Purpose, nodes[len(nodes)-1].ID, buf.Bytes())
 				if err = app.cluster.Send(wmsg); err != nil {
 					log.Error("error sending message", "err", err)
+				} else {
+					log.Debug("forwarded transaction", "txn", txe)
 				}
 			}
 
