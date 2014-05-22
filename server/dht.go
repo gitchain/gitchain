@@ -140,7 +140,7 @@ func (app *GitchainApp) OnNewLeaves(leaves []*wendy.Node) {
 }
 
 func (app *GitchainApp) OnNodeJoin(node wendy.Node) {
-	app.log.Info("node joined", "node", node.ID)
+	app.log.Info("node joined", "node", node.ID, "addr", app.cluster.GetIP(node))
 }
 
 func (app *GitchainApp) OnNodeExit(node wendy.Node) {
@@ -186,21 +186,21 @@ func DHTServer(srv *T) {
 loop:
 	select {
 	case existing := <-ch:
-		log.Debug("received a request to join the cluster", "address", existing)
+		log.Debug("received a request to join the cluster", "addr", existing)
 
 		addr := strings.Split(existing, ":")
 		port := 31000
 		if len(addr) == 2 {
 			port, err = strconv.Atoi(addr[1])
 			if err != nil {
-				log.Error("invalid port number", "address", existing, "port", addr[1], "err", err)
+				log.Error("invalid port number", "addr", existing, "port", addr[1], "err", err)
 				goto loop
 			}
 		}
 		err = cluster.Join(addr[0], port)
 
 		if err != nil {
-			log.Error("can't join cluster", "address", existing, "err", err)
+			log.Error("can't join cluster", "addr", existing, "err", err)
 			goto loop
 		}
 	case txe := <-tch:
@@ -208,6 +208,7 @@ loop:
 		if err = broadcast(cluster, txe, MSG_TRANSACTION); err != nil {
 			log.Error("error broadcasting a transaction message", "txn", txe)
 		}
+		log.Debug("broadcasted transaction", "txn", txe)
 	}
 	goto loop
 }
