@@ -27,8 +27,8 @@
 		},
 		{
 			"ImportPath": "github.com/gitchain/wendy",
-			"Comment": "beta1",
-			"Rev": "e4601da9fbf96fd1f6e81a18e58db10b57bce3ff"
+			"Comment": "beta1-1-g04c2bc0",
+			"Rev": "04c2bc0cca02f42bb84ebfa72cbe59858682f43d"
 		},
 		{
 			"ImportPath": "github.com/go-router/router",
