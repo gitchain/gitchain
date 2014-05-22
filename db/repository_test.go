@@ -1,6 +1,7 @@
 package db
 
 import (
+	"bytes"
 	"os"
 	"sort"
 	"testing"
@@ -123,7 +124,7 @@ func TestPutGetRef(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting repository ref: %v", err)
 	}
-	assert.True(t, types.HashEqual(ref0, types.EmptyHash()))
+	assert.True(t, bytes.Compare(ref0, types.EmptyHash()) == 0)
 
 	ref := util.SHA160([]byte("random"))
 	err = db.PutRef("myrepo", "refs/heads/master", ref)
@@ -137,7 +138,7 @@ func TestPutGetRef(t *testing.T) {
 	if ref1 == nil {
 		t.Errorf("error getting repository ref `refs/heads/master'")
 	}
-	assert.True(t, types.HashEqual(ref, ref1))
+	assert.True(t, bytes.Compare(ref, ref1) == 0)
 }
 
 func TestListRefs(t *testing.T) {

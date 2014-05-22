@@ -47,7 +47,7 @@ func (service *TransactionService) GetTransaction(r *http.Request, args *GetTran
 			return err
 		}
 		for i := range block.Transactions {
-			if types.HashEqual(block.Transactions[i].Hash(), hash) {
+			if block.Transactions[i].Hash().Equals(hash) {
 				tx = block.Transactions[i]
 				break
 			}
