@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math/big"
+	"runtime"
 	"time"
 
 	"github.com/conformal/fastsha256"
@@ -57,7 +58,7 @@ loop:
 				c <- b
 				return
 			}
-
+			runtime.Gosched()
 		}
 	}
 	// Update timestamp and restart the process
