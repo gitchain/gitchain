@@ -11,10 +11,12 @@ import (
 	"github.com/gitchain/gitchain/util"
 )
 
+type Hash []byte
+
 type Object interface {
 	Hash() []byte
 	Bytes() []byte
-	SetBytes([]byte)
+	SetBytes([]byte) error
 	New() Object
 	Type() string
 }
@@ -24,7 +26,12 @@ func ObjectToBytes(o Object) []byte {
 }
 
 type Commit struct {
-	Content []byte
+	Content   []byte
+	Tree      Hash
+	Parent    Hash
+	Author    string
+	Committer string
+	Message   string
 }
 
 func (o *Commit) Type() string {
@@ -35,8 +42,33 @@ func (o *Commit) Hash() []byte {
 	return util.SHA160(ObjectToBytes(o))
 }
 
-func (o *Commit) SetBytes(b []byte) {
+func (o *Commit) SetBytes(b []byte) (err error) {
 	o.Content = b
+	lines := bytes.Split(b, []byte{'\n'})
+	for i := range lines {
+		if len(lines[i]) > 0 {
+			split := bytes.SplitN(lines[i], []byte{' '}, 2)
+			switch string(split[0]) {
+			case "tree":
+				o.Tree = make([]byte, 20)
+				_, err = hex.Decode(o.Tree, split[1])
+			case "parent":
+				o.Parent = make([]byte, 20)
+				_, err = hex.Decode(o.Parent, split[1])
+			case "author":
+				o.Author = string(split[1])
+			case "committer":
+				o.Committer = string(split[1])
+			}
+			if err != nil {
+				return
+			}
+		} else {
+			o.Message = string(bytes.Join(append(lines[i+1:]), []byte{'\n'}))
+			break
+		}
+	}
+	return
 }
 
 func (o *Commit) Bytes() []byte {
@@ -63,8 +95,9 @@ func (o *Tree) Hash() []byte {
 	return util.SHA160(ObjectToBytes(o))
 }
 
-func (o *Tree) SetBytes(b []byte) {
+func (o *Tree) SetBytes(b []byte) (err error) {
 	o.Content = b
+	return
 }
 
 func (o *Tree) Bytes() []byte {
@@ -95,8 +128,9 @@ func (o *Blob) Bytes() []byte {
 	return o.Content
 }
 
-func (o *Blob) SetBytes(b []byte) {
+func (o *Blob) SetBytes(b []byte) (err error) {
 	o.Content = b
+	return
 }
 
 func (o *Blob) New() Object {
@@ -123,8 +157,9 @@ func (o *Tag) Bytes() []byte {
 	return o.Content
 }
 
-func (o *Tag) SetBytes(b []byte) {
+func (o *Tag) SetBytes(b []byte) (err error) {
 	o.Content = b
+	return
 }
 
 func (o *Tag) New() Object {
