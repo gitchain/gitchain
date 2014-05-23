@@ -246,7 +246,7 @@ loop:
 		if err != nil {
 			log15.Error("error preparing msg id for a git object", "obj", obj, "err", err)
 		} else {
-			msg := cluster.NewMessage(MSG_OBJECT, id, git.ObjectToBytes(obj))
+			msg := cluster.NewMessage(MSG_REGULAR|MSG_OBJECT, id, git.ObjectToBytes(obj))
 			if err = cluster.Send(msg); err != nil {
 				log.Error("error sending git object", "obj", obj, "err", err)
 			}
