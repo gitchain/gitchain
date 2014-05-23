@@ -6,7 +6,6 @@ import (
 	"path"
 
 	"github.com/gitchain/gitchain/git"
-	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/wendy"
@@ -20,7 +19,7 @@ type GitchainApp struct {
 }
 
 func (app *GitchainApp) OnError(err error) {
-	panic(err.Error())
+	app.log.Error("net error", "err", err)
 }
 
 func (app *GitchainApp) OnDeliver(msg wendy.Message) {
@@ -42,7 +41,7 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 				if txe, err = transaction.DecodeEnvelope(envelope.Content); err != nil {
 					log.Error("error while decoding transaction", "err", err)
 				} else {
-					router.Send("/transaction", make(chan *transaction.Envelope), txe)
+					app.srv.Router.Pub(txe, "/transaction")
 					log.Debug("announced transaction locally", "txn", txe)
 				}
 			}

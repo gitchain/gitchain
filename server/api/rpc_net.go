@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/server"
 	"github.com/inconshreveable/log15"
 )
@@ -20,7 +19,7 @@ type JoinArgs struct {
 type JoinReply struct {
 }
 
-func (*NetService) Join(r *http.Request, args *JoinArgs, reply *JoinReply) error {
-	router.Send("/dht/join", make(chan string), args.Host)
+func (service *NetService) Join(r *http.Request, args *JoinArgs, reply *JoinReply) error {
+	service.srv.Router.Pub("/dht/join", args.Host)
 	return nil
 }

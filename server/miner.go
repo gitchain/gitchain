@@ -65,7 +65,7 @@ loop:
 		case MiningFactoryInstantiationRequest:
 			ireq := msg.(MiningFactoryInstantiationRequest)
 			status.Miners[ireq.Block] = Miner{OriginalResponseChannel: ireq.ResponseChannel, StartTime: time.Now(), NumTransactions: len(ireq.Block.Transactions)}
-			go ireq.Block.Mine(minerCh)
+			go ireq.Block.Mine(srv.Router, minerCh)
 		}
 	}
 	goto loop

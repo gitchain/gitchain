@@ -3,6 +3,10 @@
 	"GoVersion": "go1.2.2",
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/gcfg",
+			"Rev": "c2d3050044d05357eaf6c3547249ba57c5e235cb"
+		},
+		{
 			"ImportPath": "code.google.com/p/go.crypto/ripemd160",
 			"Comment": "null-209",
 			"Rev": "23b39e4e860172e1983ded00a9d2f7e42b7683d0"
@@ -31,10 +35,6 @@
 			"Rev": "7078a6b268633c4a26cf4c433fdffeb0d508a6dc"
 		},
 		{
-			"ImportPath": "github.com/go-router/router",
-			"Rev": "78387cb6879a1d936a0baf5e275abaf4638a7707"
-		},
-		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "1be7a086a5fd6440ef16fe96baeda0c78282b980"
 		},
@@ -54,6 +54,10 @@
 			"ImportPath": "github.com/inconshreveable/log15",
 			"Comment": "v1-5-gccbf579",
 			"Rev": "ccbf579e0146867dd4e9c175c07d9d5585fd7ef3"
+		},
+		{
+			"ImportPath": "github.com/tuxychandru/pubsub",
+			"Rev": "02de8aa2db3d570c5ab1be5ba67b456fd0fb7c4e"
 		},
 		{
 			"ImportPath": "github.com/tv42/base58",

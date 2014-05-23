@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
@@ -50,7 +49,7 @@ func (service *NameService) NameReservation(r *http.Request, args *NameReservati
 	// We save sha(random+name)=txhash to scraps to be able to find
 	// the transaction hash by random and number during allocation
 	service.srv.DB.PutScrap(util.SHA256(append(random, []byte(args.Name)...)), txe.Hash())
-	router.Send("/transaction", make(chan *transaction.Envelope), txe)
+	service.srv.Router.Pub(txe, "/transaction")
 	return nil
 }
 
@@ -91,6 +90,6 @@ func (service *NameService) NameAllocation(r *http.Request, args *NameAllocation
 	txe.Sign(key)
 
 	reply.Id = hex.EncodeToString(txe.Hash())
-	router.Send("/transaction", make(chan *transaction.Envelope), txe)
+	service.srv.Router.Pub(txe, "/transaction")
 	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gitchain/gitchain/block"
-	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 	"github.com/inconshreveable/log15"
@@ -40,21 +39,11 @@ func targetBits() uint32 {
 
 func TransactionListener(srv *T) {
 	log := srv.Log.New("cmp", "txn")
-	var msg *transaction.Envelope
-	var blk *block.Block
 	blockChannel := make(chan *block.Block)
 	var transactionsPool []*transaction.Envelope
 	var previousBlockHash types.Hash
-	bch := make(chan *block.Block)
-	_, err := router.PermanentSubscribe("/block", bch)
-	if err != nil {
-		log.Error("error while subscribing to /block", "err", err)
-	}
-	tch := make(chan *transaction.Envelope)
-	_, err = router.PermanentSubscribe("/transaction", tch)
-	if err != nil {
-		log.Error("error while subscribing to /transaction", "err", err)
-	}
+	bch := srv.Router.Sub("/block")
+	tch := srv.Router.Sub("/transaction")
 
 	miningEmpty := false
 
@@ -62,51 +51,55 @@ initPool:
 	transactionsPool = make([]*transaction.Envelope, 0)
 loop:
 	select {
-	case msg = <-tch:
-		log.Debug("received transaction", "txn", msg)
-		verification, err := msg.Verify()
-		if err != nil {
-			log.Error("error during transaction verification", "err", err)
-		}
-		if !verification {
-			// discard transaction
-			goto loop
-		}
-		err = srv.DB.PutTransaction(msg)
-		if err != nil {
-			log.Error("error while recording transaction", "txn", msg, "err", err)
-		}
-		// notify internal components about a transaction in the working memory
-		router.Send("/transaction/mem", make(chan *transaction.Envelope), msg)
-
-		miningEmpty = false
-		transactionsPool = append(transactionsPool, msg)
-		if blk, _ = srv.DB.GetLastBlock(); blk == nil {
-			previousBlockHash = types.EmptyHash()
-		} else {
-			previousBlockHash = blk.Hash()
-		}
-		blockTransactionsPool := make([]*transaction.Envelope, 0)
-		if bat := prepareBAT(srv, log); bat != nil {
-			blockTransactionsPool = append(transactionsPool, bat)
-		}
-
-		blk, err := block.NewBlock(previousBlockHash, targetBits(), blockTransactionsPool)
-		if err != nil {
-			log.Error("error while creating a new block", "err", err)
-		} else {
-			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
-		}
-	case blk = <-bch:
-		for i := range blk.Transactions {
-			err = srv.DB.DeleteTransaction(blk.Transactions[i].Hash())
+	case txni := <-tch:
+		if txn, ok := txni.(*transaction.Envelope); ok {
+			log.Debug("received transaction", "txn", txn)
+			verification, err := txn.Verify()
 			if err != nil {
-				log.Error("error while deleting transaction", "txn", blk.Transactions[i], "err", err)
+				log.Error("error during transaction verification", "err", err)
+			}
+			if !verification {
+				// discard transaction
+				goto loop
+			}
+			err = srv.DB.PutTransaction(txn)
+			if err != nil {
+				log.Error("error while recording transaction", "txn", txn, "err", err)
+			}
+			// notify internal components about a transaction in the working memory
+			srv.Router.Pub(txn, "/transaction/mem")
+
+			miningEmpty = false
+			transactionsPool = append(transactionsPool, txn)
+			if blk, _ := srv.DB.GetLastBlock(); blk == nil {
+				previousBlockHash = types.EmptyHash()
+			} else {
+				previousBlockHash = blk.Hash()
+			}
+			blockTransactionsPool := make([]*transaction.Envelope, 0)
+			if bat := prepareBAT(srv, log); bat != nil {
+				blockTransactionsPool = append(transactionsPool, bat)
+			}
+
+			blk, err := block.NewBlock(previousBlockHash, targetBits(), blockTransactionsPool)
+			if err != nil {
+				log.Error("error while creating a new block", "err", err)
+			} else {
+				miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 			}
 		}
-	case blk = <-blockChannel:
-
+	case blki := <-bch:
+		if blk, ok := blki.(*block.Block); ok {
+			for i := range blk.Transactions {
+				err := srv.DB.DeleteTransaction(blk.Transactions[i].Hash())
+				if err != nil {
+					log.Error("error while deleting transaction", "txn", blk.Transactions[i], "err", err)
+				}
+			}
+		}
+	case blk := <-blockChannel:
 		miningEmpty = false
+		log.Debug("received mined block", "block", blk.Hash())
 		if lastBlk, _ := srv.DB.GetLastBlock(); lastBlk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
@@ -115,15 +108,11 @@ loop:
 		if bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0 {
 			// this is a legitimate last block
 			srv.DB.PutBlock(blk, true)
-			if err := router.Send("/block", make(chan *block.Block), blk); err != nil {
-				log.Error("error while sending block", "err", err)
-			}
-			if err := router.Send("/block/last", make(chan *block.Block), blk); err != nil {
-				log.Error("error while sending block", "err", err)
-			}
-
+			srv.Router.Pub(blk, "/block", "/block/last")
+			log.Debug("mined block accepted", "block", blk.Hash())
 		} else {
 			// resubmit the block with new previous block for mining
+			log.Debug("submitting the block for re-mining", "block", blk.Hash())
 			blk.PreviousBlockHash = previousBlockHash
 			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
@@ -132,7 +121,7 @@ loop:
 		if key, _ := srv.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil &&
 			len(GetMiningStatus().Miners) == 0 {
 			// if there are no transactions to be included into a block, try mining an empty/BAT-only block
-			if blk, _ = srv.DB.GetLastBlock(); blk == nil {
+			if blk, _ := srv.DB.GetLastBlock(); blk == nil {
 				previousBlockHash = types.EmptyHash()
 			} else {
 				previousBlockHash = blk.Hash()

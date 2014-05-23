@@ -11,7 +11,6 @@ import (
 	"github.com/bargez/pktline"
 	"github.com/gitchain/gitchain/git"
 	"github.com/gitchain/gitchain/repository"
-	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gorilla/mux"
@@ -51,7 +50,7 @@ func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
 				if err != nil {
 					enc.Encode(append([]byte{3}, []byte(fmt.Sprintf("Error while writing object: %v\n", err))...))
 				} else {
-					router.Send("/git/object", make(chan git.Object), packfile.Objects[i])
+					srv.Router.Pub(packfile.Objects[i], "/git/object")
 				}
 			}
 			for i := range lines {
@@ -89,7 +88,7 @@ func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
 				txe.Sign(key)
 
 				enc.Encode(append([]byte{2}, []byte(fmt.Sprintf("[gitchain] Transaction %s\n", txe.Hash()))...))
-				router.Send("/transaction", make(chan *transaction.Envelope), txe)
+				srv.Router.Pub(txe, "/transaction")
 				enc.Encode(append([]byte{1}, pktlineToBytes([]byte(fmt.Sprintf("ok %s\n", ref)))...))
 			}
 		}

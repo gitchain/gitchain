@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/gitchain/gitchain/git"
-	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
@@ -16,15 +15,9 @@ import (
 
 func Server(srv *server.T) {
 	log := srv.Log.New("cmp", "dht")
-
-	ch := make(chan string)
-	_, err := router.PermanentSubscribe("/dht/join", ch)
-
-	tch := make(chan *transaction.Envelope)
-	_, err = router.PermanentSubscribe("/transaction/mem", tch)
-
-	och := make(chan git.Object)
-	_, err = router.PermanentSubscribe("/git/object", och)
+	ch := srv.Router.Sub("/dht/join")
+	tch := srv.Router.Sub("/transaction/mem")
+	och := srv.Router.Sub("/git/object")
 
 	keyAuth, err := newKeyAuth()
 	if err != nil {
@@ -53,47 +46,52 @@ func Server(srv *server.T) {
 
 	for i := range srv.Config.Network.Join {
 		log.Info("scheduling a connection", "addr", srv.Config.Network.Join[i])
-		router.Send("/dht/join", make(chan string), srv.Config.Network.Join[i])
+		srv.Router.Pub(srv.Config.Network.Join[i], "/dht/join")
 	}
 
 loop:
 	select {
-	case existing := <-ch:
-		log.Debug("received a request to join the cluster", "addr", existing)
+	case addri := <-ch:
+		if addr, ok := addri.(string); ok {
+			log.Debug("received a request to join the cluster", "addr", addr)
 
-		addr := strings.Split(existing, ":")
-		port := 31000
-		if len(addr) == 2 {
-			port, err = strconv.Atoi(addr[1])
+			addr := strings.Split(addr, ":")
+			port := 31000
+			if len(addr) == 2 {
+				port, err = strconv.Atoi(addr[1])
+				if err != nil {
+					log.Error("invalid port number", "addr", addr, "port", addr[1], "err", err)
+					goto loop
+				}
+			}
+			err = cluster.Join(addr[0], port)
+
 			if err != nil {
-				log.Error("invalid port number", "addr", existing, "port", addr[1], "err", err)
+				log.Error("can't join cluster", "addr", addr, "err", err)
 				goto loop
 			}
 		}
-		err = cluster.Join(addr[0], port)
-
-		if err != nil {
-			log.Error("can't join cluster", "addr", existing, "err", err)
-			goto loop
-		}
-	case txe := <-tch:
-		log.Debug("received transaction", "txn", txe)
-		if err = broadcast(cluster, txe, MSG_TRANSACTION); err != nil {
-			log.Error("error broadcasting a transaction message", "txn", txe, "err", err)
-		} else {
-			log.Debug("broadcasted transaction", "txn", txe)
-		}
-	case obj := <-och:
-		id, err := wendy.NodeIDFromBytes(util.SHA256(obj.Hash()))
-		if err != nil {
-			log15.Error("error preparing msg id for a git object", "obj", obj, "err", err)
-		} else {
-			msg := cluster.NewMessage(MSG_REGULAR|MSG_OBJECT, id, git.ObjectToBytes(obj))
-			if err = cluster.Send(msg); err != nil {
-				log.Error("error sending git object", "obj", obj, "err", err)
+	case txei := <-tch:
+		if txe, ok := txei.(*transaction.Envelope); ok {
+			log.Debug("received transaction", "txn", txe)
+			if err = broadcast(cluster, txe, MSG_TRANSACTION); err != nil {
+				log.Error("error broadcasting a transaction message", "txn", txe, "err", err)
+			} else {
+				log.Debug("broadcasted transaction", "txn", txe)
 			}
 		}
-
+	case obji := <-och:
+		if obj, ok := obji.(git.Object); ok {
+			id, err := wendy.NodeIDFromBytes(util.SHA256(obj.Hash()))
+			if err != nil {
+				log15.Error("error preparing msg id for a git object", "obj", obj, "err", err)
+			} else {
+				msg := cluster.NewMessage(MSG_REGULAR|MSG_OBJECT, id, git.ObjectToBytes(obj))
+				if err = cluster.Send(msg); err != nil {
+					log.Error("error sending git object", "obj", obj, "err", err)
+				}
+			}
+		}
 	}
 	goto loop
 }

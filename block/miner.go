@@ -8,14 +8,12 @@ import (
 	"time"
 
 	"github.com/conformal/fastsha256"
-	"github.com/gitchain/gitchain/router"
+	"github.com/tuxychandru/pubsub"
 )
 
-func (b *Block) Mine(c chan *Block) {
-	lastch := make(chan *Block)
-	router.PermanentSubscribe("/block/last", lastch)
-	blockch := make(chan *Block)
-	router.PermanentSubscribe("/block", lastch)
+func (b *Block) Mine(router *pubsub.PubSub, c chan *Block) {
+	lastch := router.Sub("/block/last")
+	blockch := router.Sub("/block")
 	target := targetFromBits(b.Bits)
 	i := big.NewInt(int64(0))
 	var n uint32
@@ -26,15 +24,20 @@ func (b *Block) Mine(c chan *Block) {
 loop:
 	for n = 0; n < 4294967295; n++ {
 		select {
-		case last := <-lastch:
-			b.PreviousBlockHash = last.Hash()
-			b.Timestamp = time.Now().UTC().Unix()
-			goto loop
-		case ablock := <-blockch:
-			for i := range ablock.Transactions {
-				for j := range b.Transactions {
-					if bytes.Compare(ablock.Transactions[i].Hash(), b.Transactions[j].Hash()) == 0 {
-						b.Transactions = append(b.Transactions[0:j-1], b.Transactions[j+1:]...)
+		case lasti := <-lastch:
+			if last, ok := lasti.(*Block); ok {
+				b.PreviousBlockHash = last.Hash()
+				b.Timestamp = time.Now().UTC().Unix()
+				goto loop
+			}
+		case ablocki := <-blockch:
+			if ablock, ok := ablocki.(*Block); ok {
+
+				for i := range ablock.Transactions {
+					for j := range b.Transactions {
+						if bytes.Compare(ablock.Transactions[i].Hash(), b.Transactions[j].Hash()) == 0 {
+							b.Transactions = append(b.Transactions[0:j-1], b.Transactions[j+1:]...)
+						}
 					}
 				}
 			}
@@ -56,6 +59,8 @@ loop:
 			if i.Cmp(target) == -1 {
 				b.Nonce = n
 				c <- b
+				router.Unsub(lastch)
+				router.Unsub(blockch)
 				return
 			}
 			runtime.Gosched()

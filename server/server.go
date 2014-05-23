@@ -6,12 +6,14 @@ import (
 
 	"github.com/gitchain/gitchain/db"
 	"github.com/inconshreveable/log15"
+	"github.com/tuxychandru/pubsub"
 )
 
 type T struct {
 	Config *Config
 	DB     *db.T
 	Log    log15.Logger
+	Router *pubsub.PubSub
 }
 
 func (srv *T) Init() error {
@@ -25,5 +27,6 @@ func (srv *T) Init() error {
 	}
 	srv.DB = database
 	srv.Log = log15.New()
+	srv.Router = pubsub.New(100)
 	return nil
 }

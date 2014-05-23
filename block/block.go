@@ -40,7 +40,7 @@ func init() {
 	gob.Register(&Block{})
 }
 
-func (b *Block) Hash() []byte {
+func (b *Block) Hash() types.Hash {
 	buf := bytes.NewBuffer([]byte{})
 	buf.Grow(192)
 	buf1 := bytes.NewBuffer([]byte{})

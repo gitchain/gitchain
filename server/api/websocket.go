@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/block"
-	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gorilla/websocket"
 	"github.com/inconshreveable/log15"
@@ -25,22 +24,22 @@ func websocketHandler(srv *server.T, log log15.Logger) func(http.ResponseWriter,
 			return
 		}
 
-		ch := make(chan *block.Block)
-		_, err = router.PermanentSubscribe("/block", ch)
+		ch := srv.Router.Sub("/block")
 
 	loop:
 		select {
-		case blk := <-ch:
-			encoded, err := json.Marshal(blk)
-			if err != nil {
-				log.Error("error encoding block", "err", err)
-				return
+		case blki := <-ch:
+			if blk, ok := blki.(*block.Block); ok {
+				encoded, err := json.Marshal(blk)
+				if err != nil {
+					log.Error("error encoding block", "err", err)
+					return
+				}
+				if err = conn.WriteMessage(websocket.TextMessage, encoded); err != nil {
+					log.Error("error sending data", "err", err)
+					return
+				}
 			}
-			if err = conn.WriteMessage(websocket.TextMessage, encoded); err != nil {
-				log.Error("error sending data", "err", err)
-				return
-			}
-
 		}
 		goto loop
 
