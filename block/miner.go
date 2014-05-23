@@ -39,7 +39,7 @@ loop:
 				for i := range ablock.Transactions {
 					for j := range b.Transactions {
 						if bytes.Compare(ablock.Transactions[i].Hash(), b.Transactions[j].Hash()) == 0 {
-							b.Transactions = append(b.Transactions[0:j-1], b.Transactions[j+1:]...)
+							b.Transactions = append(b.Transactions[0:j], b.Transactions[j+1:]...)
 						}
 					}
 				}
