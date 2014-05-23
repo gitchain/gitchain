@@ -14,4 +14,4 @@ ui/bindata.go: ui $(filter-out ui/bindata.go, $(wildcard ui/**)) Makefile
 prepare:
 	@go get github.com/jteeuwen/go-bindata/go-bindata
 	@go get github.com/tools/godep
-	@godep restore
+	@PATH=$(GOPATH)/bin:$(PATH) godep restore
