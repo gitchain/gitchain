@@ -4,6 +4,7 @@ package transaction
 import (
 	"encoding/gob"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gitchain/gitchain/types"
 )
@@ -45,4 +46,8 @@ func (txn *NameDeallocation) Encode() ([]byte, error) {
 
 func (txn *NameDeallocation) Hash() types.Hash {
 	return hash(txn)
+}
+
+func (txn *NameDeallocation) String() string {
+	return fmt.Sprintf("NDT %s", txn.Name)
 }

@@ -5,7 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/gob"
-	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/gitchain/gitchain/keys"
@@ -86,5 +86,5 @@ func DecodeEnvelope(b []byte) (*Envelope, error) {
 }
 
 func (e *Envelope) String() string {
-	return hex.EncodeToString(e.Hash())
+	return fmt.Sprintf("[%s %s]", e.Hash(), e.Transaction)
 }

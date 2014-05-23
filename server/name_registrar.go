@@ -114,14 +114,14 @@ loop:
 				// 2. verify its maturity
 				confirmations, err := srv.DB.GetTransactionConfirmations(reservationTx.Hash())
 				if err != nil {
-					log.Error("can't compute number of confirmations for reservation", "txn", reservationTx, "err", err)
+					log.Error("can't compute number of confirmations for reservation", "txn", reservationTx.Hash(), "err", err)
 					break
 				}
 
 				if confirmations >= RESERVATION_CONFIRMATIONS_REQUIRED {
 					// this reservation is confirmed
 					srv.DB.PutRepository(repository.NewRepository(tx1.Name, repository.PENDING, tx0.Hash()))
-					log.Info("created pending repository", "repo", tx1.Name, "alloc_txn", tx0)
+					log.Info("created pending repository", "repo", tx1.Name, "alloc_txn", tx0.Hash())
 				} else {
 					// this allocation is wasted as the distance is not long enough
 				}

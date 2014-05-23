@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gitchain/gitchain/repository"
 	"github.com/gitchain/gitchain/types"
@@ -57,4 +58,8 @@ func (txn *ReferenceUpdate) Encode() ([]byte, error) {
 
 func (txn *ReferenceUpdate) Hash() types.Hash {
 	return hash(txn)
+}
+
+func (txn *ReferenceUpdate) String() string {
+	return fmt.Sprintf("RUT %s %s %s:%s", txn.Repository, txn.Ref, txn.Old, txn.New)
 }

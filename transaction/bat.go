@@ -45,3 +45,7 @@ func (txn *BlockAttribution) Encode() ([]byte, error) {
 func (txn *BlockAttribution) Hash() types.Hash {
 	return hash(txn)
 }
+
+func (*BlockAttribution) String() string {
+	return "BAT"
+}

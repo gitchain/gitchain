@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gitchain/gitchain/types"
 )
@@ -50,4 +51,8 @@ func (txn *NameAllocation) Encode() ([]byte, error) {
 
 func (txn *NameAllocation) Hash() types.Hash {
 	return hash(txn)
+}
+
+func (txn *NameAllocation) String() string {
+	return fmt.Sprintf("NAT %s %x", txn.Name, txn.Rand)
 }

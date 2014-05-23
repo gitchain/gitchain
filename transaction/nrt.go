@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 
 	"github.com/gitchain/gitchain/types"
 	"github.com/gitchain/gitchain/util"
@@ -50,4 +51,8 @@ func (txn *NameReservation) Encode() ([]byte, error) {
 
 func (txn *NameReservation) Hash() types.Hash {
 	return hash(txn)
+}
+
+func (txn *NameReservation) String() string {
+	return fmt.Sprintf("NRT %s", txn.Hashed)
 }
