@@ -88,7 +88,7 @@ func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
 				txe := transaction.NewEnvelope(hash, tx)
 				txe.Sign(key)
 
-				enc.Encode(append([]byte{2}, []byte(fmt.Sprintf("[gitchain] Transaction %s\n", txe))...))
+				enc.Encode(append([]byte{2}, []byte(fmt.Sprintf("[gitchain] Transaction %s\n", txe.Hash()))...))
 				router.Send("/transaction", make(chan *transaction.Envelope), txe)
 				enc.Encode(append([]byte{1}, pktlineToBytes([]byte(fmt.Sprintf("ok %s\n", ref)))...))
 			}
