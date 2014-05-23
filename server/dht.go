@@ -83,6 +83,9 @@ func (app *GitchainApp) OnDeliver(msg wendy.Message) {
 	var err error
 	if msg.Purpose&MSG_BROADCAST != 0 {
 		log.Debug("received a broadcast")
+		if msg.Sender.ID == app.cluster.ID() {
+			log.Error("received own broadcast", "bugtrap", "true")
+		}
 		var envelope broadcastEnvelope
 		dec := gob.NewDecoder(bytes.NewBuffer(msg.Value))
 		dec.Decode(&envelope)
