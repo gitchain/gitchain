@@ -1,0 +1,5 @@
+language: go
+go:
+  - 1.2.2
+install: make prepare
+script: make test
