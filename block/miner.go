@@ -14,6 +14,9 @@ import (
 func (b *Block) Mine(router *pubsub.PubSub, c chan *Block) {
 	lastch := router.Sub("/block/last")
 	blockch := router.Sub("/block")
+	defer router.Unsub(lastch)
+	defer router.Unsub(blockch)
+
 	target := targetFromBits(b.Bits)
 	i := big.NewInt(int64(0))
 	var n uint32
@@ -59,8 +62,6 @@ loop:
 			if i.Cmp(target) == -1 {
 				b.Nonce = n
 				c <- b
-				router.Unsub(lastch)
-				router.Unsub(blockch)
 				return
 			}
 			runtime.Gosched()

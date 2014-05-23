@@ -25,6 +25,7 @@ func websocketHandler(srv *server.T, log log15.Logger) func(http.ResponseWriter,
 		}
 
 		ch := srv.Router.Sub("/block")
+		defer srv.Router.Unsub(ch)
 
 	loop:
 		select {
