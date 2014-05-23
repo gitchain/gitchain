@@ -99,7 +99,6 @@ loop:
 		}
 	case blk := <-blockChannel:
 		miningEmpty = false
-		log.Debug("received mined block", "block", blk.Hash())
 		if lastBlk, _ := srv.DB.GetLastBlock(); lastBlk == nil {
 			previousBlockHash = types.EmptyHash()
 		} else {
