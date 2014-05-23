@@ -1,4 +1,4 @@
-package server
+package net
 
 import (
 	"bytes"
@@ -14,6 +14,7 @@ import (
 	"github.com/gitchain/gitchain/git"
 	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/router"
+	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 	"github.com/gitchain/gitchain/util"
@@ -71,7 +72,7 @@ func (*KeyAuth) Valid(b []byte) bool {
 type GitchainApp struct {
 	cluster *wendy.Cluster
 	log     log15.Logger
-	srv     *T
+	srv     *server.T
 }
 
 func (app *GitchainApp) OnError(err error) {
@@ -172,7 +173,7 @@ func (app *GitchainApp) OnNodeExit(node wendy.Node) {
 func (app *GitchainApp) OnHeartbeat(node wendy.Node) {
 }
 
-func DHTServer(srv *T) {
+func Server(srv *server.T) {
 	log := srv.Log.New("cmp", "dht")
 
 	ch := make(chan string)

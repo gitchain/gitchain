@@ -13,6 +13,7 @@ import (
 
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/server/api"
+	netserver "github.com/gitchain/gitchain/server/net"
 
 	"github.com/gorilla/rpc/json"
 )
@@ -254,7 +255,7 @@ func main() {
 			log.Printf("Error during server initialization: %v", err) // don't use log15 here
 			os.Exit(1)
 		}
-		go server.DHTServer(srv)
+		go netserver.Server(srv)
 		go server.NameRegistrar(srv)
 		go server.RepositoryServer(srv)
 		go server.MiningFactory(srv)
