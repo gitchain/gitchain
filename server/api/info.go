@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"runtime"
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/server"
@@ -12,6 +13,9 @@ import (
 type Info struct {
 	Mining    server.MiningStatus
 	LastBlock *block.Block
+	Debug     struct {
+		NumGoroutine int
+	}
 }
 
 func infoHandler(srv *server.T, log log15.Logger) func(http.ResponseWriter, *http.Request) {
@@ -21,7 +25,12 @@ func infoHandler(srv *server.T, log log15.Logger) func(http.ResponseWriter, *htt
 		if err != nil {
 			log.Error("error serving /info", "err", err)
 		}
-		json, err := json.Marshal(Info{Mining: server.GetMiningStatus(), LastBlock: lastBlock})
+		info := Info{
+			Mining:    server.GetMiningStatus(),
+			LastBlock: lastBlock,
+		}
+		info.Debug.NumGoroutine = runtime.NumGoroutine()
+		json, err := json.Marshal(info)
 		if err != nil {
 			log.Error("error serving /info", "err", err)
 		}
