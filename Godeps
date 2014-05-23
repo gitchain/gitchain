@@ -12,6 +12,10 @@
 			"Rev": "23b39e4e860172e1983ded00a9d2f7e42b7683d0"
 		},
 		{
+			"ImportPath": "github.com/alecthomas/kingpin",
+			"Rev": "77d8e78083c884b5a3fef1118fc034d0a447b21f"
+		},
+		{
 			"ImportPath": "github.com/bargez/pktline",
 			"Rev": "80bbaca5dd86a8ec7e19adb916605a264fbe3af2"
 		},
@@ -54,6 +58,11 @@
 			"ImportPath": "github.com/inconshreveable/log15",
 			"Comment": "v1-5-gccbf579",
 			"Rev": "ccbf579e0146867dd4e9c175c07d9d5585fd7ef3"
+		},
+		{
+			"ImportPath": "github.com/kr/pty",
+			"Comment": "release.r56-19-g67e2db2",
+			"Rev": "67e2db24c831afa6c64fc17b4a143390674365ef"
 		},
 		{
 			"ImportPath": "github.com/tuxychandru/pubsub",

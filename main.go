@@ -11,15 +11,13 @@ import (
 
 	"os"
 
+	"github.com/alecthomas/kingpin"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/server/api"
 	netserver "github.com/gitchain/gitchain/server/net"
 
 	"github.com/gorilla/rpc/json"
 )
-
-var configFile, dataPath, assets, netHostname string
-var httpPort, netPort int
 
 func jsonrpc(config *server.Config, method string, req, res interface{}) error {
 	buf, err := json.EncodeClientRequest(method, req)
@@ -36,20 +34,61 @@ func jsonrpc(config *server.Config, method string, req, res interface{}) error {
 }
 
 func main() {
-	flag.StringVar(&configFile, "config", "", "path to a config file")
-	flag.StringVar(&dataPath, "data-path", "gitchain.db", "path to the data directory, defaults to gitchain.db")
-	flag.StringVar(&assets, "development-mode-assets", "", "path to the assets (ui) directory, only for development")
-	flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
-	flag.IntVar(&netPort, "net-port", 31000, "Gitchain network port to serve on")
-	flag.StringVar(&netHostname, "net-hostname", "", "Gitchain network hostname")
-	flag.Parse()
+	var configFile, dataPath, assets, netHostname string
+	var httpPort, netPort int
+
+	var alias, repo, random, hash, node string
+
+	app := kingpin.New("gitchain", "Gitchain daemon and command line interface")
+	app.Flag("config", "configuration file").Short('c').ExistingFileVar(&configFile)
+	app.Flag("data-path", "path to the data directory").Short('d').StringVar(&dataPath)
+	app.Flag("development-mode-assets", "path to the assets (ui) directory, only for developmenty").ExistingDirVar(&assets)
+	app.Flag("net-hostname", "Gitchain network hostname").StringVar(&netHostname)
+	app.Flag("http-port", "HTTTP port to connect to or listen on").IntVar(&httpPort)
+	app.Flag("net-port", "Network port to listen").IntVar(&netPort)
+
+	keypairGenerate := app.Command("keypair-generate", "Generates a new keypair")
+	keypairGenerate.Arg("alias", "Keypair name to save it under").Required().StringVar(&alias)
+
+	keypairPrimary := app.Command("keypair-primary", "Sets or gets primary keypair")
+	keypairPrimary.Arg("alias", "Keypair name to save it under").StringVar(&alias)
+
+	app.Command("keypair-list", "Lists all keypairs")
+
+	nameReservation := app.Command("name-reservation", "Submits a Name Reservation Transaction")
+	nameReservation.Arg("alias", "Keypair name to save it under").Required().StringVar(&alias)
+	nameReservation.Arg("name", "Repository name to reserve").Required().StringVar(&repo)
+
+	nameAllocation := app.Command("name-allocation", "Submits a Name Allocation Transaction")
+	nameAllocation.Arg("alias", "Keypair name to save it under").Required().StringVar(&alias)
+	nameAllocation.Arg("name", "Repository name to allocate").Required().StringVar(&repo)
+	nameAllocation.Arg("random", "Random number returned by the name-reservation command").Required().StringVar(&random)
+
+	app.Command("repo-list", "Lists all repositories")
+
+	block := app.Command("block", "Renders a block")
+	block.Arg("block", "Block hash").Required().StringVar(&hash)
+
+	app.Command("block-last", "Returns last block hash")
+
+	transactions := app.Command("transactions", "Returns a list of transactions in a block")
+	transactions.Arg("block", "Block hash").Required().StringVar(&hash)
+
+	transaction := app.Command("transaction", "Renders a transaction")
+	transaction.Arg("txn", "Transaction hash").Required().StringVar(&hash)
+
+	app.Command("info", "Returns gitchain node information")
+
+	join := app.Command("node-join", "Connect to another node")
+	join.Arg("node", "Node address <host:port>").Required().StringVar(&node)
+
+	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	var config *server.Config
 	var err error
 
 	config = server.DefaultConfig()
 
-	config.General.DataPath = dataPath
 	config.General.DataPath = dataPath
 	config.API.HttpPort = httpPort
 	config.API.DevelopmentModeAssets = assets
@@ -64,14 +103,8 @@ func main() {
 		}
 	}
 
-	switch flag.Arg(0) {
-	case "GeneratePrivateKey":
-		if flag.NArg() < 2 {
-			fmt.Println("PEM file and alias required: gitchain GeneratePrivateKey <alias>")
-			os.Exit(1)
-		}
-		var alias = flag.Arg(1)
-
+	switch command {
+	case "keypair-generate":
 		var resp api.GeneratePrivateKeyReply
 		err := jsonrpc(config, "KeyService.GeneratePrivateKey", &api.GeneratePrivateKeyArgs{Alias: alias}, &resp)
 		if err != nil {
@@ -84,25 +117,29 @@ func main() {
 			fmt.Printf("Server can't generate the private key\n")
 			os.Exit(1)
 		}
-	case "SetMainKey":
-		if flag.NArg() < 2 {
-			fmt.Println("Alias required: gitchain SetMainKey <alias>")
-			os.Exit(1)
+	case "keypair-primary":
+		if alias != "" {
+			var resp api.SetMainKeyReply
+			err := jsonrpc(config, "KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
+			if err != nil {
+				fmt.Printf("Can't set main private key to %s because of %v\n", alias, err)
+				os.Exit(1)
+			}
+			if !resp.Success {
+				fmt.Printf("Can't set main private key to %s (doesn't exist?)\n", alias)
+				os.Exit(1)
+			}
+			fmt.Printf("Successfully set main private key to %s\n", alias)
+		} else {
+			var mainKeyResp api.GetMainKeyReply
+			err = jsonrpc(config, "KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
+			if err != nil {
+				fmt.Printf("Can't discover main private key because of %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println(mainKeyResp.Alias)
 		}
-		var alias = flag.Arg(1)
-		var resp api.SetMainKeyReply
-		err := jsonrpc(config, "KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
-		if err != nil {
-			fmt.Printf("Can't set main private key to %s because of %v\n", alias, err)
-			os.Exit(1)
-		}
-		if !resp.Success {
-			fmt.Printf("Can't set main private key to %s (doesn't exist?)\n", alias)
-			os.Exit(1)
-		}
-		fmt.Printf("Successfully set main private key to %s\n", alias)
-
-	case "ListPrivateKeys":
+	case "keypair-list":
 		var resp api.ListPrivateKeysReply
 		err := jsonrpc(config, "KeyService.ListPrivateKeys", &api.ListPrivateKeysArgs{}, &resp)
 		if err != nil {
@@ -124,37 +161,23 @@ func main() {
 				}
 			}(), resp.Aliases[i])
 		}
-
-	case "NameReservation":
-		if flag.NArg() < 3 {
-			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name>")
-			os.Exit(1)
-		}
-		alias := flag.Arg(1)
-		name := flag.Arg(2)
+	case "name-reservation":
 		var resp api.NameReservationReply
-		err := jsonrpc(config, "NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: name}, &resp)
+		err := jsonrpc(config, "NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: repo}, &resp)
 		if err != nil {
 			fmt.Printf("Can't make a name reservation because of %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord the above transaction hash and following random number for use during allocation: %s\n", name, resp.Id, resp.Random)
-	case "NameAllocation":
-		if flag.NArg() < 4 {
-			fmt.Println("Command format required: gitchain NameReservation <private key alias> <name> <random>")
-			os.Exit(1)
-		}
-		alias := flag.Arg(1)
-		name := flag.Arg(2)
-		random := flag.Arg(3)
+		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord the above transaction hash and following random number for use during allocation: %s\n", repo, resp.Id, resp.Random)
+	case "name-allocation":
 		var resp api.NameAllocationReply
-		err := jsonrpc(config, "NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: name, Random: random}, &resp)
+		err := jsonrpc(config, "NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: repo, Random: random}, &resp)
 		if err != nil {
 			fmt.Printf("Can't make a name allocation because of %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Name allocation for %s has been submitted (%s)\n", name, resp.Id)
-	case "ListRepositories":
+		fmt.Printf("Name allocation for %s has been submitted (%s)\n", repo, resp.Id)
+	case "repo-list":
 		var resp api.ListRepositoriesReply
 		err := jsonrpc(config, "RepositoryService.ListRepositories", &api.ListRepositoriesArgs{}, &resp)
 		if err != nil {
@@ -164,7 +187,7 @@ func main() {
 		for i := range resp.Repositories {
 			fmt.Printf("%s %s %s\n", resp.Repositories[i].Name, resp.Repositories[i].Status, resp.Repositories[i].NameAllocationTx)
 		}
-	case "LastBlock":
+	case "block-last":
 		var resp api.GetLastBlockReply
 		err := jsonrpc(config, "BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
 		if err != nil {
@@ -172,12 +195,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("%s\n", resp.Hash)
-	case "Block":
-		if flag.NArg() < 2 {
-			fmt.Println("Command format required: gitchain Block <block hash>")
-			os.Exit(1)
-		}
-		hash := flag.Arg(1)
+	case "block":
 		var resp api.GetBlockReply
 		err := jsonrpc(config, "BlockService.GetBlock", &api.GetBlockArgs{Hash: hash}, &resp)
 		if err != nil {
@@ -187,7 +205,7 @@ func main() {
 		fmt.Printf("Previous block hash: %v\nNext block hash: %v\nMerkle root hash: %v\nTimestamp: %v\nBits: %#x\nNonce: %v\nTransactions: %d\n",
 			resp.PreviousBlockHash, resp.NextBlockHash, resp.MerkleRootHash,
 			time.Unix(resp.Timestamp, 0).String(), resp.Bits, resp.Nonce, resp.NumTransactions)
-	case "Transactions":
+	case "transactions":
 		if flag.NArg() < 2 {
 			fmt.Println("Command format required: gitchain Transactions <block hash>")
 			os.Exit(1)
@@ -202,12 +220,7 @@ func main() {
 		for i := range resp.Transactions {
 			fmt.Println(resp.Transactions[i])
 		}
-	case "Transaction":
-		if flag.NArg() < 2 {
-			fmt.Println("Command format required: gitchain Transaction <transaction hash>")
-			os.Exit(1)
-		}
-		hash := flag.Arg(1)
+	case "transaction":
 		var resp api.GetTransactionReply
 		err := jsonrpc(config, "TransactionService.GetTransaction", &api.GetTransactionArgs{Hash: hash}, &resp)
 		if err != nil {
@@ -217,12 +230,8 @@ func main() {
 		fmt.Printf("Previous transaction hash: %v\nPublic key: %v\nNext public key: %v\nValid: %v\n%+v\n",
 			resp.PreviousTransactionHash, resp.PublicKey, resp.NextPublicKey, resp.Valid,
 			resp.Content)
-	case "Info":
-		var httpPort int
-		flag.IntVar(&httpPort, "http-port", 3000, "HTTP port to connect to or serve on")
-		flag.Parse()
-
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", httpPort))
+	case "info":
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", config.API.HttpPort))
 		if err != nil {
 			fmt.Printf("Can't retrieve info because of %v\n", err)
 			os.Exit(1)
@@ -234,20 +243,13 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println(string(body))
-	case "Join":
-		if flag.NArg() < 2 {
-			fmt.Println("Command format required: gitchain Join <hostname:port>")
-			os.Exit(1)
-		}
-		host := flag.Arg(1)
+	case "join":
 		var resp api.JoinReply
-		err := jsonrpc(config, "NetService.Join", &api.JoinArgs{Host: host}, &resp)
+		err := jsonrpc(config, "NetService.Join", &api.JoinArgs{Host: node}, &resp)
 		if err != nil {
 			fmt.Printf("Can't join because of %v\n", err)
 			os.Exit(1)
 		}
-	case "Serve":
-		fallthrough
 	default:
 		srv := &server.T{Config: config}
 		err := srv.Init()
@@ -262,5 +264,4 @@ func main() {
 		go server.TransactionListener(srv)
 		api.Start(srv)
 	}
-
 }
