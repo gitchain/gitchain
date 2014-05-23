@@ -1,177 +1,18 @@
 package net
 
 import (
-	"bytes"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"encoding/gob"
-	"math/big"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 
 	"github.com/gitchain/gitchain/git"
-	"github.com/gitchain/gitchain/keys"
 	"github.com/gitchain/gitchain/router"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/transaction"
-	"github.com/gitchain/gitchain/types"
 	"github.com/gitchain/gitchain/util"
 	"github.com/gitchain/wendy"
 	"github.com/inconshreveable/log15"
 )
-
-const (
-	MSG_BROADCAST   byte = 0x80
-	MSG_REGULAR     byte = 0x40
-	MSG_TRANSACTION byte = 0x01
-	MSG_OBJECT      byte = 0x02
-)
-
-type KeyAuth struct {
-	key *ecdsa.PrivateKey
-}
-
-func newKeyAuth() (ka *KeyAuth, e error) {
-	pk, e := keys.GenerateECDSA()
-	ka = &KeyAuth{key: pk}
-	return
-}
-
-func (a *KeyAuth) Marshal() []byte {
-	key, err := keys.EncodeECDSAPublicKey(&a.key.PublicKey)
-	if err != nil {
-		panic(err) // TODO: better error handling
-	}
-	sigR, sigS, err := ecdsa.Sign(rand.Reader, a.key, util.SHA256(key))
-	if err != nil {
-		panic(err) // TODO: better error handling
-	}
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	enc.Encode([][]byte{key, sigR.Bytes(), sigS.Bytes()})
-	return buf.Bytes()
-}
-
-func (*KeyAuth) Valid(b []byte) bool {
-	var data [][]byte
-	dec := gob.NewDecoder(bytes.NewBuffer(b))
-	dec.Decode(&data)
-	publicKey, err := keys.DecodeECDSAPublicKey(data[0])
-	if err != nil {
-		panic(err) // TODO: better error handling
-	}
-	r := new(big.Int)
-	s := new(big.Int)
-	r.SetBytes(data[1])
-	s.SetBytes(data[2])
-	return ecdsa.Verify(publicKey, util.SHA256(data[0]), r, s)
-}
-
-type GitchainApp struct {
-	cluster *wendy.Cluster
-	log     log15.Logger
-	srv     *server.T
-}
-
-func (app *GitchainApp) OnError(err error) {
-	panic(err.Error())
-}
-
-func (app *GitchainApp) OnDeliver(msg wendy.Message) {
-	log := app.log
-	var err error
-	if msg.Purpose&MSG_BROADCAST != 0 {
-		log.Debug("received a broadcast")
-		if msg.Sender.ID == app.cluster.ID() {
-			log.Error("received own broadcast", "bugtrap", "true")
-		}
-		var envelope broadcastEnvelope
-		dec := gob.NewDecoder(bytes.NewBuffer(msg.Value))
-		dec.Decode(&envelope)
-		if err != nil {
-			log.Error("error while decoding an incoming message", "err", err)
-		} else {
-			var txe *transaction.Envelope
-			if msg.Purpose&MSG_TRANSACTION != 0 {
-				if txe, err = transaction.DecodeEnvelope(envelope.Content); err != nil {
-					log.Error("error while decoding transaction", "err", err)
-				} else {
-					router.Send("/transaction", make(chan *transaction.Envelope), txe)
-					log.Debug("announced transaction locally", "txn", txe)
-				}
-			}
-			var newLimit wendy.NodeID
-			nodes := app.cluster.RoutingTableNodes()
-			if len(nodes) > 1 {
-				for i := range nodes[0 : len(nodes)-1] {
-					var buf bytes.Buffer
-					enc := gob.NewEncoder(&buf)
-					if nodes[i].ID.Less(envelope.Limit) {
-						if nodes[i+1].ID.Less(envelope.Limit) {
-							newLimit = nodes[i+1].ID
-						} else {
-							newLimit = envelope.Limit
-						}
-						if err = enc.Encode(broadcastEnvelope{Content: envelope.Content, Limit: newLimit}); err != nil {
-							return
-						}
-						wmsg := app.cluster.NewMessage(msg.Purpose, nodes[i].ID, buf.Bytes())
-						if err = app.cluster.Send(wmsg); err != nil {
-							log.Error("error sending message", "err", err)
-						} else {
-							log.Debug("forwarded transaction", "txn", txe)
-						}
-					} else {
-						break
-					}
-				}
-			}
-			if nodes[len(nodes)-1].ID.Less(envelope.Limit) {
-				var buf bytes.Buffer
-				enc := gob.NewEncoder(&buf)
-				if err = enc.Encode(broadcastEnvelope{Content: envelope.Content, Limit: app.cluster.ID()}); err != nil {
-					return
-				}
-				wmsg := app.cluster.NewMessage(msg.Purpose, nodes[len(nodes)-1].ID, buf.Bytes())
-				if err = app.cluster.Send(wmsg); err != nil {
-					log.Error("error sending message", "err", err)
-				} else {
-					log.Debug("forwarded transaction", "txn", txe)
-				}
-			}
-
-		}
-	} else {
-		switch {
-		case msg.Purpose&MSG_OBJECT != 0:
-			obj := git.DecodeObject(msg.Value)
-			err = git.WriteObject(obj, path.Join(app.srv.Config.General.DataPath, "objects"))
-			if err != nil {
-				log.Error("error while writing object", "obj", obj, "err", err)
-			}
-		}
-	}
-}
-
-func (app *GitchainApp) OnForward(msg *wendy.Message, next wendy.NodeID) bool {
-	return true
-}
-
-func (app *GitchainApp) OnNewLeaves(leaves []*wendy.Node) {
-}
-
-func (app *GitchainApp) OnNodeJoin(node wendy.Node) {
-	app.log.Info("node joined", "node", node.ID, "addr", app.cluster.GetIP(node))
-}
-
-func (app *GitchainApp) OnNodeExit(node wendy.Node) {
-	app.log.Info("node left", "node", node.ID)
-}
-
-func (app *GitchainApp) OnHeartbeat(node wendy.Node) {
-}
 
 func Server(srv *server.T) {
 	log := srv.Log.New("cmp", "dht")
@@ -255,47 +96,4 @@ loop:
 
 	}
 	goto loop
-}
-
-type HashableEncodable interface {
-	Hash() types.Hash
-	Encode() ([]byte, error)
-}
-
-type broadcastEnvelope struct {
-	Content []byte
-	Limit   wendy.NodeID
-}
-
-func init() {
-	gob.Register(broadcastEnvelope{})
-}
-
-func broadcast(c *wendy.Cluster, msg HashableEncodable, purpose byte) (err error) {
-	purpose = purpose | MSG_BROADCAST
-	nodes := c.RoutingTableNodes()
-	var b []byte
-	var limit wendy.NodeID
-	for i := range nodes {
-		if b, err = msg.Encode(); err != nil {
-			return
-		}
-
-		if i == len(nodes)-1 {
-			limit = c.ID()
-		} else {
-			limit = nodes[i+1].ID
-		}
-		var buf bytes.Buffer
-		enc := gob.NewEncoder(&buf)
-		if err = enc.Encode(broadcastEnvelope{Content: b, Limit: limit}); err != nil {
-			return
-		}
-
-		wmsg := c.NewMessage(purpose, nodes[i].ID, buf.Bytes())
-		if err = c.Send(wmsg); err != nil {
-			return
-		}
-	}
-	return nil
 }
