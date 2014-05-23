@@ -19,15 +19,6 @@ type Object interface {
 	Type() string
 }
 
-const (
-	OBJ_COMMIT    = 1
-	OBJ_TREE      = 2
-	OBJ_BLOB      = 3
-	OBJ_TAG       = 4
-	OBJ_OFS_DELTA = 6
-	OBJ_REF_DELTA = 7
-)
-
 func ObjectToBytes(o Object) []byte {
 	return append(append([]byte(fmt.Sprintf("%s %d", o.Type(), len(o.Bytes()))), 0), o.Bytes()...)
 }
