@@ -112,7 +112,10 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 				return fmt.Errorf("error while patching %x", ref)
 			}
 			newObject := referenced.New()
-			newObject.SetBytes(patched)
+			err = newObject.SetBytes(patched)
+			if err != nil {
+				return err
+			}
 			packfile.PutObject(newObject)
 		}
 	case OBJ_OFS_DELTA:
@@ -142,7 +145,10 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 				return fmt.Errorf("error while patching %x", referenced.Hash())
 			}
 			newObject := referenced.New()
-			newObject.SetBytes(patched)
+			err = newObject.SetBytes(patched)
+			if err != nil {
+				return err
+			}
 			packfile.PutObject(newObject)
 		}
 	case OBJ_COMMIT, OBJ_TREE, OBJ_BLOB, OBJ_TAG:
@@ -215,7 +221,10 @@ func ReadPackfile(r io.Reader) (*Packfile, error) {
 		} else {
 			patched := PatchDelta(ref.Bytes(), packfile.Deltas[i].Delta)
 			newObject := ref.New()
-			newObject.SetBytes(patched)
+			err = newObject.SetBytes(patched)
+			if err != nil {
+				return packfile, err
+			}
 			packfile.Objects = append(packfile.Objects, newObject)
 		}
 	}
