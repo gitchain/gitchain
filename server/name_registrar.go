@@ -82,7 +82,7 @@ loop:
 							h := curBlock.PreviousBlockHash
 							curBlock, err = srv.DB.GetBlock(h)
 							if err != nil {
-								log.Error("can't find block during name allocation attempt", h, "err", err)
+								log.Error("can't find block during name allocation attempt", "txn", h, "err", err)
 								break
 							}
 						}
