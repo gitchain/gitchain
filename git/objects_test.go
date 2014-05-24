@@ -9,7 +9,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const fixtureCommit = `tree 69218c749588a7147b99ff45bf7d18db1bb126e8
+const fixtureCommit = `tree 0063878ef424196f8c03563bb7192ddd75a943cd
+parent dbd0251d6dfd9c5ca7843164f9a40f2efd334aab
+author Yurii Rashkovskii <yrashk@gmail.com> 1400915287 +0800
+committer Yurii Rashkovskii <yrashk@gmail.com> 1400915287 +0800
+
+Commit object should support multiple parents
+`
+
+func TestHash(t *testing.T) {
+	c := &Commit{}
+	c.SetBytes([]byte(fixtureCommit))
+	assert.Equal(t, hex.EncodeToString(c.Hash()), "03a95d185ca6adeac9a1b4e0d2aaea9b208b3bf4")
+}
+
+const fixtureMultiparentCommit = `tree 69218c749588a7147b99ff45bf7d18db1bb126e8
 parent d3030ad8f6ad49e5ad69a2842f06940c60f9db6f
 parent d3030ad8f6ad49e5ad69a2842f06940c60f9db61
 author Yurii Rashkovskii <yrashk@gmail.com> 1400767572 +0800
@@ -19,7 +33,7 @@ Add HACKING.md`
 
 func TestCommitDecode(t *testing.T) {
 	c := &Commit{}
-	c.SetBytes([]byte(fixtureCommit))
+	c.SetBytes([]byte(fixtureMultiparentCommit))
 	assert.Equal(t, hex.EncodeToString(c.Tree), "69218c749588a7147b99ff45bf7d18db1bb126e8")
 	assert.Equal(t, hex.EncodeToString(c.Parents[0]), "d3030ad8f6ad49e5ad69a2842f06940c60f9db6f")
 	assert.Equal(t, hex.EncodeToString(c.Parents[1]), "d3030ad8f6ad49e5ad69a2842f06940c60f9db61")
@@ -110,19 +124,7 @@ var fixtureTreeEntries = []treeEntry{
 
 func TestTreeDecode(t *testing.T) {
 	c := &Tree{}
-	err := c.SetBytes(fixtureTree)
-	if err != nil {
-		t.Errorf("%v", err)
-		return
-	}
-	for i := range fixtureTreeEntries {
-		assert.Equal(t, c.Entries[i], fixtureTreeEntries[i])
-	}
-}
-
-func TestTreeDecodeWithoutHeader(t *testing.T) {
-	c := &Tree{}
-	err := c.SetBytes(fixtureTree[9:])
+	err := c.SetBytes(fixtureTree[9:]) // skip the header
 	if err != nil {
 		t.Errorf("%v", err)
 		return
@@ -136,14 +138,14 @@ func TestTreeDecodeCompressed(t *testing.T) {
 	c := &Tree{}
 	var b bytes.Buffer
 	w := zlib.NewWriter(&b)
-	w.Write(fixtureTree)
+	w.Write(fixtureTree[9:]) // skip the header
 	w.Close()
 	err := c.SetBytes(b.Bytes())
 	if err != nil {
 		t.Errorf("%v", err)
 		return
 	}
-	assert.True(t, bytes.Compare(c.Bytes(), fixtureTree) == 0)
+	assert.True(t, bytes.Compare(c.Bytes(), fixtureTree[9:]) == 0)
 	for i := range fixtureTreeEntries {
 		assert.Equal(t, c.Entries[i], fixtureTreeEntries[i])
 	}

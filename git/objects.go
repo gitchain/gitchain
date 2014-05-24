@@ -116,17 +116,7 @@ func (o *Tree) SetBytes(b []byte) (err error) {
 	}
 
 	o.Content = b
-
-	headerSplit := bytes.SplitN(b, []byte{0}, 2)
-	header := headerSplit[0]
-
-	var body []byte
-
-	if bytes.Compare(header[0:4], []byte("tree")) != 0 {
-		body = b
-	} else {
-		body = headerSplit[1]
-	}
+	body := b
 
 	for {
 		split := bytes.SplitN(body, []byte{0}, 2)
@@ -221,7 +211,7 @@ func WriteObject(o Object, dir string) (err error) {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path.Join(dir, string(hd), string(tl)), o.Bytes(), 0600)
+	return ioutil.WriteFile(path.Join(dir, string(hd), string(tl)), ObjectToBytes(o), 0600)
 }
 
 func DecodeObject(b []byte) (o Object) {
