@@ -1,5 +1,9 @@
 language: go
 go:
   - 1.2.2
-install: make prepare
-script: make test
+install: 
+  - export PATH=$GOPATH/bin:$PATH 
+  - make prepare
+script:
+  - export PATH=$GOPATH/bin:$PATH 
+  - make test
