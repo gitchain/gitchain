@@ -29,7 +29,7 @@ func ObjectToBytes(o Object) []byte {
 type Commit struct {
 	Content   []byte
 	Tree      Hash
-	Parent    Hash
+	Parents   []Hash
 	Author    string
 	Committer string
 	Message   string
@@ -54,8 +54,11 @@ func (o *Commit) SetBytes(b []byte) (err error) {
 				o.Tree = make([]byte, 20)
 				_, err = hex.Decode(o.Tree, split[1])
 			case "parent":
-				o.Parent = make([]byte, 20)
-				_, err = hex.Decode(o.Parent, split[1])
+				h := make([]byte, 20)
+				_, err = hex.Decode(h, split[1])
+				if err == nil {
+					o.Parents = append(o.Parents, h)
+				}
 			case "author":
 				o.Author = string(split[1])
 			case "committer":
