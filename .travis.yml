@@ -6,4 +6,5 @@ install:
   - make prepare
 script:
   - export PATH=$GOPATH/bin:$PATH 
+  - make 
   - make test
