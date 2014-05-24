@@ -118,6 +118,18 @@ func TestTreeDecode(t *testing.T) {
 	}
 }
 
+func TestTreeDecodeWithoutHeader(t *testing.T) {
+	c := &Tree{}
+	err := c.SetBytes(fixtureTree[9:])
+	if err != nil {
+		t.Errorf("%v", err)
+		return
+	}
+	for i := range fixtureTreeEntries {
+		assert.Equal(t, c.Entries[i], fixtureTreeEntries[i])
+	}
+}
+
 func TestTreeDecodeCompressed(t *testing.T) {
 	c := &Tree{}
 	var b bytes.Buffer

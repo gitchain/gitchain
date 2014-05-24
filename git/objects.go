@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 
@@ -118,15 +116,17 @@ func (o *Tree) SetBytes(b []byte) (err error) {
 
 	headerSplit := bytes.SplitN(b, []byte{0}, 2)
 	header := headerSplit[0]
+
+	var body []byte
+
 	if bytes.Compare(header[0:4], []byte("tree")) != 0 {
-		return errors.New("invalid tree object header")
+		body = b
+	} else {
+		body = headerSplit[1]
 	}
-	body := headerSplit[1]
-	log.Println(headerSplit[0])
 
 	for {
 		split := bytes.SplitN(body, []byte{0}, 2)
-		log.Printf("{{{%s}}}", string(split[0]))
 		split1 := bytes.SplitN(split[0], []byte{' '}, 2)
 		o.Entries = append(o.Entries, treeEntry{
 			Mode: string(split1[0]),
