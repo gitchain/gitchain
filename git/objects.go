@@ -83,8 +83,14 @@ func (o *Commit) String() string {
 	return fmt.Sprintf("commit %x", o.Hash())
 }
 
+type treeEntry struct {
+	Mode string
+	File string
+	Hash Hash
+}
 type Tree struct {
 	Content []byte
+	Entries []treeEntry
 }
 
 func (o *Tree) Type() string {
@@ -97,6 +103,21 @@ func (o *Tree) Hash() []byte {
 
 func (o *Tree) SetBytes(b []byte) (err error) {
 	o.Content = b
+	headerSplit := bytes.SplitN(b, []byte{0}, 2)
+	body := headerSplit[1]
+
+	for {
+		split := bytes.SplitN(body, []byte{0}, 2)
+		split1 := bytes.SplitN(split[0], []byte{' '}, 2)
+		o.Entries = append(o.Entries, treeEntry{
+			Mode: string(split1[0]),
+			File: string(split1[1]),
+			Hash: split[1][0:20]})
+		body = split[1][20:]
+		if len(split[1]) == 20 {
+			break
+		}
+	}
 	return
 }
 
