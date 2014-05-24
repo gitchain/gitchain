@@ -1,6 +1,8 @@
 package git
 
 import (
+	"bytes"
+	"compress/zlib"
 	"encoding/hex"
 	"testing"
 
@@ -106,11 +108,31 @@ var fixtureTreeEntries = []treeEntry{
 
 func TestTreeDecode(t *testing.T) {
 	c := &Tree{}
-	c.SetBytes(fixtureTree)
+	err := c.SetBytes(fixtureTree)
+	if err != nil {
+		t.Errorf("%v", err)
+		return
+	}
 	for i := range fixtureTreeEntries {
 		assert.Equal(t, c.Entries[i], fixtureTreeEntries[i])
 	}
+}
 
+func TestTreeDecodeCompressed(t *testing.T) {
+	c := &Tree{}
+	var b bytes.Buffer
+	w := zlib.NewWriter(&b)
+	w.Write(fixtureTree)
+	w.Close()
+	err := c.SetBytes(b.Bytes())
+	if err != nil {
+		t.Errorf("%v", err)
+		return
+	}
+	assert.True(t, bytes.Compare(c.Bytes(), fixtureTree) == 0)
+	for i := range fixtureTreeEntries {
+		assert.Equal(t, c.Entries[i], fixtureTreeEntries[i])
+	}
 }
 
 func hashFromString(h string) []byte {

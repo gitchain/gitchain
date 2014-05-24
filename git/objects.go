@@ -2,9 +2,12 @@ package git
 
 import (
 	"bytes"
+	"compress/zlib"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 
@@ -102,12 +105,28 @@ func (o *Tree) Hash() []byte {
 }
 
 func (o *Tree) SetBytes(b []byte) (err error) {
+	zr, e := zlib.NewReader(bytes.NewBuffer(b))
+	if e == nil {
+		defer zr.Close()
+		b, err = ioutil.ReadAll(zr)
+		if err != nil {
+			return err
+		}
+	}
+
 	o.Content = b
+
 	headerSplit := bytes.SplitN(b, []byte{0}, 2)
+	header := headerSplit[0]
+	if bytes.Compare(header[0:4], []byte("tree")) != 0 {
+		return errors.New("invalid tree object header")
+	}
 	body := headerSplit[1]
+	log.Println(headerSplit[0])
 
 	for {
 		split := bytes.SplitN(body, []byte{0}, 2)
+		log.Printf("{{{%s}}}", string(split[0]))
 		split1 := bytes.SplitN(split[0], []byte{' '}, 2)
 		o.Entries = append(o.Entries, treeEntry{
 			Mode: string(split1[0]),
