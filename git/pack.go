@@ -162,14 +162,15 @@ func readEntry(packfile *Packfile, reader flate.Reader, offset int) error {
 		var obj Object
 		switch typ {
 		case OBJ_COMMIT:
-			obj = &Commit{Content: buf}
+			obj = &Commit{}
 		case OBJ_TREE:
-			obj = &Tree{Content: buf}
+			obj = &Tree{}
 		case OBJ_BLOB:
-			obj = &Blob{Content: buf}
+			obj = &Blob{}
 		case OBJ_TAG:
-			obj = &Tag{Content: buf}
+			obj = &Tag{}
 		}
+		obj.SetBytes(buf)
 		packfile.PutObject(obj)
 	default:
 		return fmt.Errorf("Invalid git object tag %03b", typ)

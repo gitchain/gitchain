@@ -215,17 +215,18 @@ func WriteObject(o Object, dir string) (err error) {
 }
 
 func DecodeObject(b []byte) (o Object) {
-	split := bytes.Split(b, []byte{0})
+	split := bytes.SplitN(b, []byte{0}, 2)
 	hdr := bytes.Split(split[0], []byte(" "))
 	switch string(hdr[0]) {
 	case "commit":
-		o = &Commit{Content: split[1]}
+		o = &Commit{}
 	case "tree":
-		o = &Tree{Content: split[1]}
+		o = &Tree{}
 	case "blob":
-		o = &Blob{Content: split[1]}
+		o = &Blob{}
 	case "tag":
-		o = &Tag{Content: split[1]}
+		o = &Tag{}
 	}
+	o.SetBytes(split[1])
 	return
 }
