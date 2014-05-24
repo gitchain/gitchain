@@ -2,6 +2,8 @@ language: go
 go:
   - 1.2.2
 install: 
+  - go get github.com/jteeuwen/go-bindata/go-bindata
+  - go get github.com/tools/godep
   - export PATH=$GOPATH/bin:$PATH 
   - make prepare
 script:
