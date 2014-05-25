@@ -90,10 +90,14 @@ func main() {
 	config = server.DefaultConfig()
 
 	config.General.DataPath = dataPath
-	config.API.HttpPort = httpPort
+	if httpPort != 0 {
+		config.API.HttpPort = httpPort
+	}
 	config.API.DevelopmentModeAssets = assets
 	config.Network.Hostname = netHostname
-	config.Network.Port = netPort
+	if netPort != 0 {
+		config.Network.Port = netPort
+	}
 
 	if len(configFile) > 0 {
 		err = server.ReadConfig(configFile, config)
