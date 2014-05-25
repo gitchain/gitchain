@@ -1,16 +1,28 @@
 package git
 
 import (
+	"bufio"
 	"bytes"
 	"compress/flate"
 	"compress/zlib"
+	"crypto/sha1"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 
 	"github.com/gitchain/gitchain/util"
+)
+
+const (
+	OBJ_COMMIT    = 1
+	OBJ_TREE      = 2
+	OBJ_BLOB      = 3
+	OBJ_TAG       = 4
+	OBJ_OFS_DELTA = 6
+	OBJ_REF_DELTA = 7
 )
 
 type Delta struct {
@@ -263,4 +275,90 @@ func (r *packEntryReader) ReadByte() (byte, error) {
 		return 0, err
 	}
 	return b[0], nil
+}
+
+func NewPackfile(objects []Object) *Packfile {
+	return &Packfile{Version: 2, Objects: objects, offsets: make(map[int]int), hashes: make(map[string]int)}
+}
+
+func writeEntry(w io.Writer, o Object) (err error) {
+	var t byte
+	t |= 0x80
+	switch o.Type() {
+	case "commit":
+		t |= OBJ_COMMIT << 4
+	case "tree":
+		t |= OBJ_TREE << 4
+	case "blob":
+		t |= OBJ_BLOB << 4
+	case "tag":
+		t |= OBJ_TAG << 4
+	}
+	t |= byte(uint64(len(o.Bytes())) &^ 0xfffffffffffffff0)
+	sz := len(o.Bytes()) >> 4
+	szb := make([]byte, 16)
+	n := binary.PutUvarint(szb, uint64(sz))
+	szb = szb[0:n]
+	w.Write(append([]byte{t}, szb...))
+
+	zw := zlib.NewWriter(w)
+	_, err = zw.Write(o.Bytes())
+	defer zw.Close()
+	if err != nil {
+		return err
+	}
+	zw.Flush()
+
+	return
+}
+
+func WritePackfile(writer io.Writer, p *Packfile) (err error) {
+	cw := newSHA160checksumWriter(writer)
+	w := bufio.NewWriterSize(cw, 65519)
+	err = binary.Write(w, binary.BigEndian, []byte("PACK"))
+	if err != nil {
+		return
+	}
+	err = binary.Write(w, binary.BigEndian, p.Version)
+	if err != nil {
+		return
+	}
+	err = binary.Write(w, binary.BigEndian, uint32(len(p.Objects)))
+	if err != nil {
+		return
+	}
+	w.Flush()
+	for i := range p.Objects {
+		err = writeEntry(w, p.Objects[i])
+		if err != nil {
+			return err
+		}
+		w.Flush()
+	}
+	w.Flush()
+
+	p.Checksum = cw.Sum()
+	err = binary.Write(w, binary.BigEndian, p.Checksum)
+
+	w.Flush()
+
+	return
+}
+
+type checksumWriter struct {
+	hash   hash.Hash
+	writer io.Writer
+}
+
+func newSHA160checksumWriter(w io.Writer) *checksumWriter {
+	return &checksumWriter{hash: sha1.New(), writer: w}
+}
+
+func (w *checksumWriter) Write(p []byte) (n int, err error) {
+	w.hash.Write(p)
+	return w.writer.Write(p)
+}
+
+func (w *checksumWriter) Sum() []byte {
+	return w.hash.Sum(nil)
 }

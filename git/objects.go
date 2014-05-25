@@ -14,6 +14,10 @@ import (
 
 type Hash []byte
 
+func (h Hash) String() string {
+	return hex.EncodeToString(h)
+}
+
 type Object interface {
 	Hash() []byte
 	Bytes() []byte

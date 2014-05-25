@@ -2,15 +2,6 @@ package git
 
 const delta_size_min = 4
 
-const (
-	OBJ_COMMIT    = 1
-	OBJ_TREE      = 2
-	OBJ_BLOB      = 3
-	OBJ_TAG       = 4
-	OBJ_OFS_DELTA = 6
-	OBJ_REF_DELTA = 7
-)
-
 func deltaHeaderSize(b []byte) (uint, []byte) {
 	var size, j uint
 	var cmd byte
