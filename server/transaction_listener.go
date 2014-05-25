@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/types"
 	"github.com/inconshreveable/log15"
 )
 
-func prepareBAT(srv *T, log log15.Logger) *transaction.Envelope {
+func prepareBAT(srv *context.T, log log15.Logger) *transaction.Envelope {
 	key, err := srv.DB.GetMainKey()
 	if err != nil {
 		log.Error("error while attempting to retrieve main key", "err", err)
@@ -37,7 +38,7 @@ func targetBits() uint32 {
 	return 0x1f00ffff
 }
 
-func TransactionListener(srv *T) {
+func TransactionListener(srv *context.T) {
 	log := srv.Log.New("cmp", "txn")
 	blockChannel := make(chan *block.Block)
 	var transactionsPool []*transaction.Envelope

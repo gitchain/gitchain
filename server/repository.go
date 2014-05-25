@@ -2,12 +2,13 @@ package server
 
 import (
 	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 )
 
 const REFUPDATE_CONFIRMATIONS_REQUIRED = 1
 
-func RepositoryServer(srv *T) {
+func RepositoryServer(srv *context.T) {
 	log := srv.Log.New("cmp", "repo")
 	ch := srv.Router.Sub("/block")
 

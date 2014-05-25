@@ -6,7 +6,7 @@ import (
 	"path"
 
 	"github.com/gitchain/gitchain/git"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/wendy"
 	"github.com/inconshreveable/log15"
@@ -15,7 +15,7 @@ import (
 type GitchainApp struct {
 	cluster *wendy.Cluster
 	log     log15.Logger
-	srv     *server.T
+	srv     *context.T
 }
 
 func (app *GitchainApp) OnError(err error) {

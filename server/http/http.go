@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"fmt"
@@ -8,24 +8,26 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/api"
+	"github.com/gitchain/gitchain/server/context"
+	"github.com/gitchain/gitchain/server/git"
 	"github.com/gitchain/gitchain/ui"
 	"github.com/gorilla/mux"
 )
 
-func Start(srv *server.T) {
+func Server(srv *context.T) {
 	log := srv.Log.New("cmp", "http")
 
 	r := mux.NewRouter()
 
 	// Gitchain API
-	r.Methods("POST").Path("/rpc").HandlerFunc(jsonRpcService(srv, log).ServeHTTP)
-	r.Methods("GET").Path("/info").HandlerFunc(infoHandler(srv, log))
+	r.Methods("POST").Path("/rpc").HandlerFunc(api.JsonRpcService(srv, log).ServeHTTP)
+	r.Methods("GET").Path("/info").HandlerFunc(api.InfoHandler(srv, log))
 
-	setupGitRoutes(r, srv, log)
+	git.SetupGitRoutes(r, srv, log)
 
 	// UI
-	r.Methods("GET").Path("/websocket").HandlerFunc(websocketHandler(srv, log))
+	r.Methods("GET").Path("/websocket").HandlerFunc(api.WebsocketHandler(srv, log))
 	r.Methods("GET").Path("/").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		resp.Header().Add("Content-Type", "text/html")
 		var content []byte

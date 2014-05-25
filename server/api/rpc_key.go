@@ -4,13 +4,13 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/keys"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/inconshreveable/log15"
 )
 
 // KeySerice
 type KeyService struct {
-	srv *server.T
+	srv *context.T
 	log log15.Logger
 }
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gitchain/gitchain/block"
+	"github.com/gitchain/gitchain/server/context"
 )
 
 type Miner struct {
@@ -46,7 +47,7 @@ func GetMiningStatus() MiningStatus {
 	return <-response
 }
 
-func MiningFactory(srv *T) {
+func MiningFactory(srv *context.T) {
 	var status MiningStatus
 	status.Miners = make(map[*block.Block]Miner)
 	status.BlocksMined = 0

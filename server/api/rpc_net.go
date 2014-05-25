@@ -3,12 +3,12 @@ package api
 import (
 	"net/http"
 
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/inconshreveable/log15"
 )
 
 type NetService struct {
-	srv *server.T
+	srv *context.T
 	log log15.Logger
 }
 

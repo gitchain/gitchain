@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/keys"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/inconshreveable/log15"
 )
 
 type TransactionService struct {
-	srv *server.T
+	srv *context.T
 	log log15.Logger
 }
 

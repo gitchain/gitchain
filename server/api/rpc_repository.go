@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/repository"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/inconshreveable/log15"
 )
 
@@ -16,7 +16,7 @@ type repo struct {
 }
 
 type RepositoryService struct {
-	srv *server.T
+	srv *context.T
 	log log15.Logger
 }
 

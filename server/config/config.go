@@ -1,8 +1,8 @@
-package server
+package config
 
 import "code.google.com/p/gcfg"
 
-type Config struct {
+type T struct {
 	General struct {
 		DataPath string `gcfg:"data-path"`
 	}
@@ -17,15 +17,15 @@ type Config struct {
 	}
 }
 
-func DefaultConfig() (cfg *Config) {
-	cfg = &Config{}
+func Default() (cfg *T) {
+	cfg = &T{}
 	cfg.General.DataPath = "gitchain.db"
 	cfg.API.HttpPort = 3000
 	cfg.Network.Port = 31000
 	return
 }
 
-func ReadConfig(filename string, cfg *Config) (err error) {
+func ReadFile(filename string, cfg *T) (err error) {
 	err = gcfg.ReadFileInto(cfg, filename)
 	return
 }

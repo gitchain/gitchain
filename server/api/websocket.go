@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gitchain/gitchain/block"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gorilla/websocket"
 	"github.com/inconshreveable/log15"
 )
@@ -15,7 +15,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func websocketHandler(srv *server.T, log log15.Logger) func(http.ResponseWriter, *http.Request) {
+func WebsocketHandler(srv *context.T, log log15.Logger) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log := log.New("cmp", "websocket")
 		conn, err := upgrader.Upgrade(w, r, nil)

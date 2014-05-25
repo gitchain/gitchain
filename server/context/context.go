@@ -1,16 +1,17 @@
-package server
+package context
 
 import (
 	"os"
 	"path/filepath"
 
 	"github.com/gitchain/gitchain/db"
+	"github.com/gitchain/gitchain/server/config"
 	"github.com/inconshreveable/log15"
 	"github.com/tuxychandru/pubsub"
 )
 
 type T struct {
-	Config *Config
+	Config *config.T
 	DB     *db.T
 	Log    log15.Logger
 	Router *pubsub.PubSub

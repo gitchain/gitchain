@@ -6,14 +6,14 @@ import (
 	"strings"
 
 	"github.com/gitchain/gitchain/git"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
 	"github.com/gitchain/wendy"
 	"github.com/inconshreveable/log15"
 )
 
-func Server(srv *server.T) {
+func Server(srv *context.T) {
 	log := srv.Log.New("cmp", "dht")
 	ch := srv.Router.Sub("/dht/join")
 	tch := srv.Router.Sub("/transaction/mem")

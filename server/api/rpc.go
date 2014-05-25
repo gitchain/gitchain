@@ -1,13 +1,13 @@
 package api
 
 import (
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gorilla/rpc"
 	"github.com/gorilla/rpc/json"
 	"github.com/inconshreveable/log15"
 )
 
-func jsonRpcService(srv *server.T, log log15.Logger) *rpc.Server {
+func JsonRpcService(srv *context.T, log log15.Logger) *rpc.Server {
 	s := rpc.NewServer()
 	s.RegisterCodec(json.NewCodec(), "application/json")
 	s.RegisterService(&KeyService{srv: srv, log: log}, "")

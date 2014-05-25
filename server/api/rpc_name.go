@@ -5,14 +5,14 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
 	"github.com/inconshreveable/log15"
 )
 
 type NameService struct {
-	srv *server.T
+	srv *context.T
 	log log15.Logger
 }
 

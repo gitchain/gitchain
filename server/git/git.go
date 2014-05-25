@@ -1,4 +1,4 @@
-package api
+package git
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	"github.com/bargez/pktline"
 	"github.com/gitchain/gitchain/git"
 	"github.com/gitchain/gitchain/repository"
-	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gorilla/mux"
 	"github.com/inconshreveable/log15"
@@ -27,7 +27,7 @@ func pktlineToBytes(b []byte) []byte {
 	return buf.Bytes()
 }
 
-func readObject(srv *server.T, h git.Hash) (b []byte, err error) {
+func readObject(srv *context.T, h git.Hash) (b []byte, err error) {
 	hash := []byte(hex.EncodeToString(h))
 	hd := hash[0:2]
 	tl := hash[2:]
@@ -39,7 +39,7 @@ func readObject(srv *server.T, h git.Hash) (b []byte, err error) {
 	return
 }
 
-func processTree(srv *server.T, h git.Hash, haves []git.Hash) (objs []git.Object, err error) {
+func processTree(srv *context.T, h git.Hash, haves []git.Hash) (objs []git.Object, err error) {
 	b, err := readObject(srv, h)
 	if err != nil {
 		return
@@ -71,7 +71,7 @@ func processTree(srv *server.T, h git.Hash, haves []git.Hash) (objs []git.Object
 	}
 	return
 }
-func processCommit(srv *server.T, want git.Hash, haves []git.Hash) (objs []git.Object, err error) {
+func processCommit(srv *context.T, want git.Hash, haves []git.Hash) (objs []git.Object, err error) {
 	for i := range haves {
 		if bytes.Compare(want, haves[i]) == 0 {
 			return
@@ -140,7 +140,7 @@ func (w *sideband64Writer) Write(p []byte) (n int, err error) {
 	}
 }
 
-func setupGitRoutes(r *mux.Router, srv *server.T, log log15.Logger) {
+func SetupGitRoutes(r *mux.Router, srv *context.T, log log15.Logger) {
 	log = log.New("cmp", "git")
 	// Git Server
 	r.Methods("POST").Path("/{repository:.+}/git-upload-pack").HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {

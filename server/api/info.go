@@ -7,6 +7,7 @@ import (
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/server"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/inconshreveable/log15"
 )
 
@@ -18,7 +19,7 @@ type Info struct {
 	}
 }
 
-func infoHandler(srv *server.T, log log15.Logger) func(http.ResponseWriter, *http.Request) {
+func InfoHandler(srv *context.T, log log15.Logger) func(http.ResponseWriter, *http.Request) {
 	return func(resp http.ResponseWriter, req *http.Request) {
 		log := log.New("http")
 		lastBlock, err := srv.DB.GetLastBlock()

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gitchain/gitchain/block"
 	"github.com/gitchain/gitchain/repository"
+	"github.com/gitchain/gitchain/server/context"
 	"github.com/gitchain/gitchain/transaction"
 	"github.com/gitchain/gitchain/util"
 	"github.com/inconshreveable/log15"
@@ -13,7 +14,7 @@ import (
 const RESERVATION_CONFIRMATIONS_REQUIRED = 3
 const ALLOCATION_CONFIRMATIONS_REQUIRED = 3
 
-func processPendingAllocations(srv *T, log log15.Logger) {
+func processPendingAllocations(srv *context.T, log log15.Logger) {
 	pending := srv.DB.ListPendingRepositories()
 	for i := range pending {
 		r, err := srv.DB.GetRepository(pending[i])
@@ -45,7 +46,7 @@ func isValidReservation(reservation *transaction.Envelope, alloc *transaction.En
 	}
 }
 
-func NameRegistrar(srv *T) {
+func NameRegistrar(srv *context.T) {
 	log := srv.Log.New("cmp", "name")
 	ch := srv.Router.Sub("/block")
 loop:

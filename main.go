@@ -14,17 +14,20 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/gitchain/gitchain/server"
 	"github.com/gitchain/gitchain/server/api"
+	"github.com/gitchain/gitchain/server/config"
+	"github.com/gitchain/gitchain/server/context"
+	httpserver "github.com/gitchain/gitchain/server/http"
 	netserver "github.com/gitchain/gitchain/server/net"
 
 	"github.com/gorilla/rpc/json"
 )
 
-func jsonrpc(config *server.Config, method string, req, res interface{}) error {
+func jsonrpc(cfg *config.T, method string, req, res interface{}) error {
 	buf, err := json.EncodeClientRequest(method, req)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/rpc", config.API.HttpPort), "application/json", bytes.NewBuffer(buf))
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/rpc", cfg.API.HttpPort), "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}
@@ -84,23 +87,23 @@ func main() {
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	var config *server.Config
+	var cfg *config.T
 	var err error
 
-	config = server.DefaultConfig()
+	cfg = config.Default()
 
-	config.General.DataPath = dataPath
+	cfg.General.DataPath = dataPath
 	if httpPort != 0 {
-		config.API.HttpPort = httpPort
+		cfg.API.HttpPort = httpPort
 	}
-	config.API.DevelopmentModeAssets = assets
-	config.Network.Hostname = netHostname
+	cfg.API.DevelopmentModeAssets = assets
+	cfg.Network.Hostname = netHostname
 	if netPort != 0 {
-		config.Network.Port = netPort
+		cfg.Network.Port = netPort
 	}
 
 	if len(configFile) > 0 {
-		err = server.ReadConfig(configFile, config)
+		err = config.ReadFile(configFile, cfg)
 		if err != nil {
 			log.Printf("Error read config file %s: %v", configFile, err) // don't use log15 here
 			os.Exit(1)
@@ -110,7 +113,7 @@ func main() {
 	switch command {
 	case "keypair-generate":
 		var resp api.GeneratePrivateKeyReply
-		err := jsonrpc(config, "KeyService.GeneratePrivateKey", &api.GeneratePrivateKeyArgs{Alias: alias}, &resp)
+		err := jsonrpc(cfg, "KeyService.GeneratePrivateKey", &api.GeneratePrivateKeyArgs{Alias: alias}, &resp)
 		if err != nil {
 			fmt.Printf("Can't generate private key because of %v\n", err)
 			os.Exit(1)
@@ -124,7 +127,7 @@ func main() {
 	case "keypair-primary":
 		if alias != "" {
 			var resp api.SetMainKeyReply
-			err := jsonrpc(config, "KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
+			err := jsonrpc(cfg, "KeyService.SetMainKey", &api.SetMainKeyArgs{Alias: alias}, &resp)
 			if err != nil {
 				fmt.Printf("Can't set main private key to %s because of %v\n", alias, err)
 				os.Exit(1)
@@ -136,7 +139,7 @@ func main() {
 			fmt.Printf("Successfully set main private key to %s\n", alias)
 		} else {
 			var mainKeyResp api.GetMainKeyReply
-			err = jsonrpc(config, "KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
+			err = jsonrpc(cfg, "KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
 			if err != nil {
 				fmt.Printf("Can't discover main private key because of %v\n", err)
 				os.Exit(1)
@@ -145,13 +148,13 @@ func main() {
 		}
 	case "keypair-list":
 		var resp api.ListPrivateKeysReply
-		err := jsonrpc(config, "KeyService.ListPrivateKeys", &api.ListPrivateKeysArgs{}, &resp)
+		err := jsonrpc(cfg, "KeyService.ListPrivateKeys", &api.ListPrivateKeysArgs{}, &resp)
 		if err != nil {
 			fmt.Printf("Can't list private keys because of %v\n", err)
 			os.Exit(1)
 		}
 		var mainKeyResp api.GetMainKeyReply
-		err = jsonrpc(config, "KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
+		err = jsonrpc(cfg, "KeyService.GetMainKey", &api.GetMainKeyArgs{}, &mainKeyResp)
 		if err != nil {
 			fmt.Printf("Can't discover main private key because of %v\n", err)
 			os.Exit(1)
@@ -167,7 +170,7 @@ func main() {
 		}
 	case "name-reservation":
 		var resp api.NameReservationReply
-		err := jsonrpc(config, "NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: repo}, &resp)
+		err := jsonrpc(cfg, "NameService.NameReservation", &api.NameReservationArgs{Alias: alias, Name: repo}, &resp)
 		if err != nil {
 			fmt.Printf("Can't make a name reservation because of %v\n", err)
 			os.Exit(1)
@@ -175,7 +178,7 @@ func main() {
 		fmt.Printf("Name reservation for %s has been submitted (%s)\nRecord the above transaction hash and following random number for use during allocation: %s\n", repo, resp.Id, resp.Random)
 	case "name-allocation":
 		var resp api.NameAllocationReply
-		err := jsonrpc(config, "NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: repo, Random: random}, &resp)
+		err := jsonrpc(cfg, "NameService.NameAllocation", &api.NameAllocationArgs{Alias: alias, Name: repo, Random: random}, &resp)
 		if err != nil {
 			fmt.Printf("Can't make a name allocation because of %v\n", err)
 			os.Exit(1)
@@ -183,7 +186,7 @@ func main() {
 		fmt.Printf("Name allocation for %s has been submitted (%s)\n", repo, resp.Id)
 	case "repo-list":
 		var resp api.ListRepositoriesReply
-		err := jsonrpc(config, "RepositoryService.ListRepositories", &api.ListRepositoriesArgs{}, &resp)
+		err := jsonrpc(cfg, "RepositoryService.ListRepositories", &api.ListRepositoriesArgs{}, &resp)
 		if err != nil {
 			fmt.Printf("Can't list repositories because of %v\n", err)
 			os.Exit(1)
@@ -193,7 +196,7 @@ func main() {
 		}
 	case "block-last":
 		var resp api.GetLastBlockReply
-		err := jsonrpc(config, "BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
+		err := jsonrpc(cfg, "BlockService.GetLastBlock", &api.GetLastBlockArgs{}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a block because of %v\n", err)
 			os.Exit(1)
@@ -201,7 +204,7 @@ func main() {
 		fmt.Printf("%s\n", resp.Hash)
 	case "block":
 		var resp api.GetBlockReply
-		err := jsonrpc(config, "BlockService.GetBlock", &api.GetBlockArgs{Hash: hash}, &resp)
+		err := jsonrpc(cfg, "BlockService.GetBlock", &api.GetBlockArgs{Hash: hash}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a block because of %v\n", err)
 			os.Exit(1)
@@ -216,7 +219,7 @@ func main() {
 		}
 		hash := flag.Arg(1)
 		var resp api.BlockTransactionsReply
-		err := jsonrpc(config, "BlockService.BlockTransactions", &api.BlockTransactionsArgs{Hash: hash}, &resp)
+		err := jsonrpc(cfg, "BlockService.BlockTransactions", &api.BlockTransactionsArgs{Hash: hash}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a list of block transactions because of %v\n", err)
 			os.Exit(1)
@@ -226,7 +229,7 @@ func main() {
 		}
 	case "transaction":
 		var resp api.GetTransactionReply
-		err := jsonrpc(config, "TransactionService.GetTransaction", &api.GetTransactionArgs{Hash: hash}, &resp)
+		err := jsonrpc(cfg, "TransactionService.GetTransaction", &api.GetTransactionArgs{Hash: hash}, &resp)
 		if err != nil {
 			fmt.Printf("Can't get a transaction because of %v\n", err)
 			os.Exit(1)
@@ -235,7 +238,7 @@ func main() {
 			resp.PreviousTransactionHash, resp.PublicKey, resp.NextPublicKey, resp.Valid,
 			resp.Content)
 	case "info":
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", config.API.HttpPort))
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/info", cfg.API.HttpPort))
 		if err != nil {
 			fmt.Printf("Can't retrieve info because of %v\n", err)
 			os.Exit(1)
@@ -249,13 +252,13 @@ func main() {
 		fmt.Println(string(body))
 	case "join":
 		var resp api.JoinReply
-		err := jsonrpc(config, "NetService.Join", &api.JoinArgs{Host: node}, &resp)
+		err := jsonrpc(cfg, "NetService.Join", &api.JoinArgs{Host: node}, &resp)
 		if err != nil {
 			fmt.Printf("Can't join because of %v\n", err)
 			os.Exit(1)
 		}
 	default:
-		srv := &server.T{Config: config}
+		srv := &context.T{Config: cfg}
 		err := srv.Init()
 		if err != nil {
 			log.Printf("Error during server initialization: %v", err) // don't use log15 here
@@ -266,6 +269,6 @@ func main() {
 		go server.RepositoryServer(srv)
 		go server.MiningFactory(srv)
 		go server.TransactionListener(srv)
-		api.Start(srv)
+		httpserver.Server(srv)
 	}
 }
