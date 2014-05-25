@@ -4,6 +4,7 @@ go:
   - 1.2.2
   - tip
 install: 
+  - export PATH=$PATH:$HOME/gopath/bin
   - make prepare
 script:
   - make
