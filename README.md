@@ -2,6 +2,9 @@ Gitchain
 ========
 Decentralized P2P Git Network
 
+[![Build Status](https://secure.travis-ci.org/gitchain/gitchain.png)](http://travis-ci.org/gitchain/gitchain)
+
+
 To quote from git's own description:
 
 > Git is a free and open source distributed version control system designed to handle everything
