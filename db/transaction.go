@@ -13,13 +13,13 @@ import (
 	"github.com/gitchain/gitchain/types"
 )
 
-func (db *T) GetTransactionBlock(hash []byte) (b *block.Block, e error) {
+func (db *T) GetTransactionBlock(hash types.Hash) (b *block.Block, e error) {
 	readable(&e, db, func(dbtx *bolt.Tx) {
 		bucket := dbtx.Bucket([]byte("blocks"))
 		if bucket != nil {
 			blockHash := bucket.Get(append([]byte("T"), hash...))
 			if blockHash == nil {
-				e = fmt.Errorf("referenced block %v not found", blockHash)
+				e = fmt.Errorf("transaction %s isn't included in any block", hash)
 				return
 			}
 			encodedBlock := bucket.Get(blockHash)

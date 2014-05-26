@@ -48,7 +48,7 @@ func isValidReservation(reservation *transaction.Envelope, alloc *transaction.En
 
 func NameRegistrar(srv *context.T) {
 	log := srv.Log.New("cmp", "name")
-	ch := srv.Router.Sub("/block")
+	ch := srv.Router.Sub("/block/last")
 loop:
 	select {
 	case blki := <-ch:
