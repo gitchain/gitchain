@@ -8,15 +8,13 @@ import (
 	"time"
 
 	"github.com/conformal/fastsha256"
-	"github.com/tuxychandru/pubsub"
 )
 
-func (b *Block) Mine(router *pubsub.PubSub, c chan *Block) {
-	lastch := router.Sub("/block/last")
-	blockch := router.Sub("/block")
-	defer router.Unsub(lastch)
-	defer router.Unsub(blockch)
-
+func Miner(blockChan chan *Block, minedBlockChan chan *Block) {
+	var b *Block
+init:
+	b = <-blockChan
+mine:
 	target := targetFromBits(b.Bits)
 	i := big.NewInt(int64(0))
 	var n uint32
@@ -27,22 +25,11 @@ func (b *Block) Mine(router *pubsub.PubSub, c chan *Block) {
 loop:
 	for n = 0; n < 4294967295; n++ {
 		select {
-		case lasti := <-lastch:
-			if last, ok := lasti.(*Block); ok {
-				b.PreviousBlockHash = last.Hash()
-				b.Timestamp = time.Now().UTC().Unix()
-				goto loop
-			}
-		case ablocki := <-blockch:
-			if ablock, ok := ablocki.(*Block); ok {
-
-				for i := range ablock.Transactions {
-					for j := range b.Transactions {
-						if bytes.Compare(ablock.Transactions[i].Hash(), b.Transactions[j].Hash()) == 0 {
-							b.Transactions = append(b.Transactions[0:j], b.Transactions[j+1:]...)
-						}
-					}
-				}
+		case b = <-blockChan:
+			if b == nil { // cancel mining
+				goto init
+			} else {
+				goto mine
 			}
 		default:
 			binary.Write(buf, binary.LittleEndian, b.PreviousBlockHash)
@@ -61,8 +48,8 @@ loop:
 			buf.Reset()
 			if i.Cmp(target) == -1 {
 				b.Nonce = n
-				c <- b
-				return
+				minedBlockChan <- b
+				goto init
 			}
 			runtime.Gosched()
 		}

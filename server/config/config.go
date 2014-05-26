@@ -1,6 +1,10 @@
 package config
 
-import "code.google.com/p/gcfg"
+import (
+	"runtime"
+
+	"code.google.com/p/gcfg"
+)
 
 type T struct {
 	General struct {
@@ -15,6 +19,9 @@ type T struct {
 		Hostname string
 		Join     []string
 	}
+	Mining struct {
+		Processes int
+	}
 }
 
 func Default() (cfg *T) {
@@ -22,6 +29,7 @@ func Default() (cfg *T) {
 	cfg.General.DataPath = "gitchain.db"
 	cfg.API.HttpPort = 3000
 	cfg.Network.Port = 31000
+	cfg.Mining.Processes = runtime.NumCPU()
 	return
 }
 

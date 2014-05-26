@@ -86,7 +86,7 @@ loop:
 			if err != nil {
 				log.Error("error while creating a new block", "err", err)
 			} else {
-				miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
+				miningFactoryRequests <- &MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 			}
 		}
 	case blki := <-bch:
@@ -95,6 +95,11 @@ loop:
 				err := srv.DB.DeleteTransaction(blk.Transactions[i].Hash())
 				if err != nil {
 					log.Error("error while deleting transaction", "txn", blk.Transactions[i], "err", err)
+				}
+				for j := range transactionsPool {
+					if bytes.Compare(transactionsPool[j].Hash(), blk.Transactions[i].Hash()) == 0 {
+						transactionsPool = append(transactionsPool[0:j], transactionsPool[j+1:]...)
+					}
 				}
 			}
 		}
@@ -107,6 +112,13 @@ loop:
 		}
 		if bytes.Compare(blk.PreviousBlockHash, previousBlockHash) == 0 {
 			// this is a legitimate last block
+			for i := range blk.Transactions {
+				for j := range transactionsPool {
+					if bytes.Compare(transactionsPool[j].Hash(), blk.Transactions[i].Hash()) == 0 {
+						transactionsPool = append(transactionsPool[0:j], transactionsPool[j+1:]...)
+					}
+				}
+			}
 			srv.DB.PutBlock(blk, true)
 			srv.Router.Pub(blk, "/block", "/block/last")
 			log.Debug("mined block accepted", "block", blk.Hash())
@@ -114,12 +126,12 @@ loop:
 			// resubmit the block with new previous block for mining
 			log.Debug("submitting the block for re-mining", "block", blk.Hash())
 			blk.PreviousBlockHash = previousBlockHash
-			miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
+			miningFactoryRequests <- &MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 		}
-		goto initPool
+		goto loop
 	case <-time.After(time.Second * 1):
 		if key, _ := srv.DB.GetMainKey(); len(transactionsPool) == 0 && !miningEmpty && key != nil &&
-			len(GetMiningStatus().Miners) == 0 {
+			GetMiningStatus().AvailableMiners() > 0 {
 			// if there are no transactions to be included into a block, try mining an empty/BAT-only block
 			if blk, _ := srv.DB.GetLastBlock(); blk == nil {
 				previousBlockHash = types.EmptyHash()
@@ -133,7 +145,7 @@ loop:
 			if err != nil {
 				log.Error("error while creating a new block", "err", err)
 			} else {
-				miningFactoryRequests <- MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
+				miningFactoryRequests <- &MiningFactoryInstantiationRequest{Block: blk, ResponseChannel: blockChannel}
 				miningEmpty = true
 			}
 			goto initPool
