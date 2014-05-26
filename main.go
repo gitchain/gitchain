@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -213,11 +212,6 @@ func main() {
 			resp.PreviousBlockHash, resp.NextBlockHash, resp.MerkleRootHash,
 			time.Unix(resp.Timestamp, 0).String(), resp.Bits, resp.Nonce, resp.NumTransactions)
 	case "transactions":
-		if flag.NArg() < 2 {
-			fmt.Println("Command format required: gitchain Transactions <block hash>")
-			os.Exit(1)
-		}
-		hash := flag.Arg(1)
 		var resp api.BlockTransactionsReply
 		err := jsonrpc(cfg, "BlockService.BlockTransactions", &api.BlockTransactionsArgs{Hash: hash}, &resp)
 		if err != nil {
