@@ -142,10 +142,11 @@ loop:
 			} else {
 				previousBlockHash = blk.Hash()
 			}
+			blockTransactionsPool := make([]*transaction.Envelope, 0)
 			if bat := prepareBAT(srv, log); bat != nil {
-				transactionsPool = append(transactionsPool, bat)
+				blockTransactionsPool = append(transactionsPool, bat)
 			}
-			blk, err := block.NewBlock(previousBlockHash, targetBits(), transactionsPool)
+			blk, err := block.NewBlock(previousBlockHash, targetBits(), blockTransactionsPool)
 			if err != nil {
 				log.Error("error while creating a new block", "err", err)
 			} else {
