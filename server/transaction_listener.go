@@ -119,9 +119,13 @@ loop:
 					}
 				}
 			}
-			srv.DB.PutBlock(blk, true)
-			srv.Router.Pub(blk, "/block", "/block/last")
-			log.Debug("mined block accepted", "block", blk.Hash())
+			err := srv.DB.PutBlock(blk, true)
+			if err != nil {
+				log.Error("error while serializing block", "block", blk.Hash(), "err", err)
+			} else {
+				srv.Router.Pub(blk, "/block", "/block/last")
+				log.Debug("mined block accepted", "block", blk.Hash())
+			}
 		} else {
 			// resubmit the block with new previous block for mining
 			log.Debug("submitting the block for re-mining", "block", blk.Hash())
