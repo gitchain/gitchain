@@ -1,5 +1,6 @@
 Hacking notes
 =============
+(Also, please check out the [development survey](https://github.com/gitchain/gitchain/wiki/Development-Survey))
 
 It is very convenient to create a couple of config files like these:
 
