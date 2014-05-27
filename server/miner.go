@@ -142,7 +142,13 @@ loop:
 			}
 			previousBlockHash = blk.Hash()
 			stopMiners(status)
-			mineBlock(status, srv, log, previousBlockHash, transactionsPool)
+			err := srv.DB.PutBlock(blk, true)
+			if err != nil {
+				log.Error("error while serializing block", "block", blk.Hash(), "err", err)
+			} else {
+				srv.Router.Pub(blk, "/block", "/block/last")
+				mineBlock(status, srv, log, previousBlockHash, transactionsPool)
+			}
 		}
 	case <-time.After(time.Second * 1):
 		if key, _ := srv.DB.GetMainKey(); key != nil && len(transactionsPool) == 0 && status.AvailableMiners() == n {
