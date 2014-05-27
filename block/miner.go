@@ -14,6 +14,9 @@ func Miner(blockChan chan *Block, minedBlockChan chan *Block) {
 	var b *Block
 init:
 	b = <-blockChan
+	if b == nil {
+		goto init
+	}
 mine:
 	target := targetFromBits(b.Bits)
 	i := big.NewInt(int64(0))
