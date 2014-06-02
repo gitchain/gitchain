@@ -1,4 +1,8 @@
 /gitchain
+/gitchain.pdf
+/gitchain.log
+/gitchain.out
+/gitchain.aux
 /gitchain*.db
 /*.config
 /tmp

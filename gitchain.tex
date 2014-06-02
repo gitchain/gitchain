@@ -1,22 +1,46 @@
 \documentclass[a4paper]{article}
 
+
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
+\usepackage{amsfonts}
 \usepackage{graphicx}
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage{url}
 \usepackage{hyperref}
+\usepackage{tabu} % should be loaded after hyperref (http://tex.stackexchange.com/questions/110682/footnote-in-tabu-table-not-shown)
 
+% notation
 \newcommand{\concatA}{%
   \mathbin{\raisebox{1ex}{\scalebox{.7}{$\frown$}}}%
 }
 \newcommand{\concatB}{%
   \mathbin{\rotatebox[origin=c]{90}{\scalebox{.7}{(\kern1ex)}}}
 }
+\newcommand{\Gbin}{\mathcal{B}}
+\newcommand{\Gbinhash}{\overset{\mathcal{H}}{\mathcal{B}}}
+\newcommand{\Ghash}{\mathcal{H}}
+\newcommand{\Gbitcoinhash}{\overset{b}{\mathcal{H}}}
+\newcommand{\Ggithash}{\overset{g}{\mathcal{H}}}
+\newcommand{\Ggitobject}{\mathbb{G}}
+\newcommand{\Gtxs}{\mathbb{T}}
+\newcommand{\Gbitcointxs}{\overset{b}{\mathbb{T}}}
+\newcommand{\Genvs}{\mathbb{E}}
+\newcommand{\Gstates}{\mathbb{S}}
+\newcommand{\Gkeypairs}{\mathbb{K}}
+\newcommand{\Gpubkeys}{\mathbb{K}{'}}
+\newcommand{\Gprivkeys}{\mathbb{K}{''}}
+\newcommand{\Gsigc}[1]{\mathcal{S}_{#1}}
+\newcommand{\Gsig}{\mathcal{S}}
+
+\newcommand{\tuple}[1]{\ensuremath{\left \langle #1 \right \rangle }}
+%
+
+
 \title{Gitchain: Decentralized Git Hosting}
 
-\author{Yurii Rashkovskii \texttt{yrashk@gmail.com}}
+\author{Yurii Rashkovskii \texttt{yrashk@gmail.com}\and Oleg Andreev \texttt{oleganza@gmail.com}}
 
 \date{\today}
 
@@ -29,74 +53,91 @@ This paper presents an approach for a decentralized storage of Git repositories 
 
 \section{Introduction}
 
-Over past couple of years, increased usage of Git and similar tools has brought services like GitHub, Bitbucket and Gitorious to life. However, once a centralized service is experiencing a malfunction, network problem or a denial of service attack, wide reliance on it is severely impacting development workflow as a huge percentage of open source projects effectively go offline for the period of outage.
+Over past couple of years, increased usage of Git and similar tools has brought services like GitHub, Bitbucket and Gitorious to life. However, once a centralized service is experiencing a malfunction, network problem or a denial of service attack, wide reliance on it is severely impacting development workflow as a huge percentage of open source projects effectively go offline for the period of outage. Such services are also at risk of censorship and access breaches that can lead to repositories content alterations.
 
 There has been at least one known attempt to create a decentralized git system, GitTorrent \cite{fonseca06}, however, it did not gain any significant traction and has been effectively abandoned.
 
-However, recent developments such as Bitcoin or Namecoin, combined with older ones such as different variations of DHT and public key cryptography warrant another attempt to remove a single point of failure present in today's Git infrastructure.
+However, recent developments such as Bitcoin \cite{bitcoin} and Namecoin \cite{namecoin}, combined with older ones such as different variations of DHT and public key cryptography warrant another attempt to remove a single point of failure present in today's Git infrastructure.
 
-In order to make the problem simpler, this paper splits it into a few distinct parts and discusses them separately, in the order of logical significance. The goal of this paper is to design the simplest possible system while (ideally) allowing improvements to be stacked on top of it. Some of these improvements might be described within the paper.
+\section{Goals}
+
+Before designing such a system, we must examine the reasons that have led to its inception and define a minimalistic but
+uncompromisable set of goals that such system must be able to attain.
+
+\begin{enumerate}
+\item No central authority of any kind
+\item Secure, fair name allocation
+\item Tamper-proof history of modifications
+\item Redundant object storage
+\end{enumerate}
+
+\section{Notation and Definitions}
+
+To ease the comprehension of this paper, in this section we have compiled major notation elements used throughout this paper.
+
+\begin{center}
+\begin{tabu}{|c|c|}
+\hline
+\textbf{Notation} & \textbf{Description}\\ \hline
+$\concatA$ & Binary\footnote{Hereafter by binary we mean a sequence of bytes} concatenation operator\\ \hline
+$\Gbin(x)$ & Binary encoding of $x$\\ \hline
+$\Gbinhash(x)$ & Binary encoding of $x$ for the purpose of hashing\\ \hline
+$\Ghash(x)$ & Hash of $\Gbinhash(x)$, defined as double SHA256\\ \hline
+$\Gbitcoinhash(x)$ & Hash of $x$, defined as per Bitcoin specification (double SHA256)\\ \hline
+$\Ggithash(x)$ & Hash of $x$, defined as per Git specification (SHA160)\\ \hline
+$\Ggitobject$ & Set of all Git objects \\ \hline
+$\Gtxs$ & Set of all Gitchain transactions \\ \hline
+$\Gbitcointxs$ & Set of all corresponding Bitcoin transactions \\ \hline
+$\Genvs$ & Set of all Gitchain transaction envelopes \\ \hline
+$\Gstates$ & Set of all states of the system\\ \hline
+$\Gkeypairs$ & Set of all key pairs \\ \hline
+$\Gpubkeys$ & Set of all public keys \\ \hline
+$\Gprivkeys$ & Set of all private keys \\ \hline
+$\Gsigc{c}(x, k)$ & ECDSA signature of $\Gbinhash(x)$ over curve $c$, where $k \in \Gprivkeys$  \\ \hline
+$\Gsig(x, k)$ & $\Gsigc{secp256k1}(x, k)$ \\ \hline
+\end{tabu}
+\end{center}
 
 \section{General Architecture}
 
-Gitchain is built around a couple of concepts, and is largerly inspired by Bitcoin and Namecoin.
+Gitchain is built around a couple of concepts, and is largerly inspired by Bitcoin and Namecoin. It uses Bitcoin blockchain as a mechanism of consensus by leveraging Bitcoin's blocks and mining to secure its own transactions. Expensive, highly specialized computer farms is the most reliable way to achieve consensus. If we were to use non-specialized resources, it would be harder to gauge whether the majority of them are indeed used for proof-of-work computations. By observing that enormous amount of work happens in a very specific, easy-to-observe part of the economy, we can estimate how expensive it is to produce an alternative, equally difficult message. In case of Bitcoin mining farms, such an alternative would require a very expensive and complex production chain, requring either outcompeting other firms that use chip foundries or building single use datacenters in the most cost-effective locations on the planet.
 
-Gitchain maintains its own \emph{blockchain}. However, there are some notable differences:
+Gitchain defines its own transaction independently from Bitcoin, however, every transaction on the Gitchain network is uniquely represented by a corresponding Bitcoin transaction that is used as an inclusion marker in Bitcoin blocks.
 
-\begin{itemize}
-\item \emph{No scripting language}. Instead, different transaction types are used. This simplifies its implementation and helps addressing the transaction malleability \cite{txnmal} issue.
-\item \emph{Target block discovery time is 30 seconds \todo{Not a final number yet}}. Network difficulty is adjusted every 8640 blocks (or roughly 3 days) \todo{Final numbers will depend on target discovery time}
-\end{itemize}
-
-In addition to the blockchain, Gitchain uses a DHT technique to store Git objects in a distributed manner.
+In addition to the blockchain, Gitchain uses DHT to store Git objects in a distributed manner and to broadcast transactions \cite{elansary}.
 
 \section{Public Key Cryptography}
 
-Gitchain is using elliptic public key cryptography to implement signing and verification, using secp256k1 curve \todo{This is not a final decision. There's a lot of interesting materials available on this subject: \cite{safecurves} \cite{trough} \cite{nistcurvesdangers}}, the same one used in
-Bitcoin.
+Gitchain is using elliptic public key cryptography to implement signing and verification, using secp256k1 curve. Even though SafeCurves \cite{safecurves} lists secp256k1 as a potentially unsafe curve, we have to use it in order to match the one used in Bitcoin. There are no known attacks at this angle in Bitcoin to this day.
 
-\section{Transaction}
+\section{Transactions}
 
-Every transaction on the Gitchain blockchain has a SHA256 hash $TransactionHash := sha256(Transaction)$. In this paper, transactions are typically represented with its name and record-like structure:
+Every Gitchain transaction $\Gtxs_{k}$ is a state modifier, such that $\Gtxs_{k}(\Gstates_{k-1}) = \Gstates_{k}$. A transaction
+carries a specialized message that describes the nature of this modification. There are multiple types of transactions, described further
+in this document.
 
-\begin{verbatim}
-SampleTransaction{Value: ...}
-\end{verbatim}
+Each transaction $\Gtxs_{k}$, authored by a holder of $\Gprivkeys_{m}$ is enveloped with a tuple $\Genvs_{k}$:
 
-\subsection{Envelope}
+$$
+\Genvs_{k} := \tuple{\underset{BitcoinTx}{\Gbitcoinhash(\Gbitcointxs_{k})}, \underset{Signature}{S(\Gtxs_{k}, \Gprivkeys_{m})}, \underset{PublicKey}{\Gpubkeys_{m}}}
+$$
 
-Every Gitchain transaction is enveloped with this structure:
+We define envelope binary representation for the purpose of hashing as $$\Gbinhash(\Genvs_{k}) := \Ghash(\Gtxs_{k}) \concatA S(\Gtxs_{k}, \Gprivkeys_{m}) \concatA  \Gpubkeys_{m}$$
 
-\begin{table}[h]
-\centering
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{Field} & \textbf{Description}\\ \hline
-PreviousEnvelopeHash & $EnvelopeHash(PreviousEnvelope)$ \\ \hline
-Signature & $ECDSASignature(EnvelopeHash(Envelope))$ \\ \hline
-PublicKey & Public key used in the signature \\ \hline
-NextPublicKey & Next public key in the transaction chain \\ \hline
-\end{tabular}
-\end{table}
+Each transaction has a corresponding Bitcoin transaction $\Gbitcointxs_{k}$ that uses \\OP\_RETURN facility to carry a magic header and a
+reference to the transaction using its envelope hash $\Ghash(\Genvs_{k})$. Typically, primary output of this transaction is equal to its input.
 
-
-$$H := sha256(TransactionHash(Transaction) \concatA PreviousEnvelopeHash \concatA NextPublicKey)$$ where $Transaction$ is the transaction enveloped and is used to uniquely address that envelope.
-
+Since it is bitcoin miners that provide block mining for Gitchain (see \nameref{sec:mining}) and there is no way to exclude invalid or
+conflicting transactions from those blocks, the convention is that invalid transactions should be ignored and in case of conflicting
+transactions, it is always the first one listed in a mined block that is chosen, all other conflicting transactions are ignored.
 
 \section{Mining}
+\label{sec:mining}
 
-In order to maintain the blockchain, Gitchain nodes mine blocks, similarly to Bitcoin or Namecoin. However, to avoid Bitcoin miners
-with optimized hardware to attempt taking over Gitchain mining, a different algorithm should be chosen.
+Gitchain has no mining of its own. Instead, it leverages computationally expensive mining provided by Bitcoin miners at the expense of end users having to pay Bitcoin transaction fees.
 
-\subsection{Block Attribution Transaction (BAT)}
+As a result, Gitchain is getting the most expensive proof of work to maintain the consensus on the state of the system and avoids the necessity to establish its own mining network, with all the risks and downsides of such a setup.
 
-While a block can be mined without attribution, it is generally recommended that a miner includes the following transaction into every block it mines. It can be later used as a proof of work record to be redeemed in other transactions.
-
-\begin{verbatim}
-BlockAttribution{}
-\end{verbatim}
-
-These transactions should never be broadcasted independently of a block. If a node receives an out-of-block BAT transaction, it is discarded immediately.
 
 \section{Name Allocation}
 
@@ -106,17 +147,18 @@ Before any repository can be addressed (and therefore pulled from or pushed to),
 \item A name has a unique textual (defined as \texttt{hpath} in RFC1738 \cite{rfc1738}) representation (to be used as a part of HTTP URL)
 \item Name allocation happens on a first-come basis
 \item Name can be deallocated (for repository removal or renaming)
-\item Fair and reasonable name prefix allocation should be possible (for example, to claim your own base user identifier, for example \texttt{johndoe/} in \texttt{johndoe/foobar})
+\item Fair and reasonable name prefix allocation should be possible (for example, to claim your own base user identifier, for example \texttt{johndoe} in \texttt{johndoe/foobar})
 \end{enumerate}
 
 \subsection{Name Reservation Transaction (NRT)}
 
-Similarly to Namecoin, before a name can be allocated it has to be securely reserved. The following transaction need to mature (12 confirmations\todo{Not a final number}) before the name can be allocated.
+Similarly to Namecoin, before a name can be allocated it has to be securely reserved. The following transaction need to mature (6 confirmations) before the name can be allocated. However, unless followed by a Name Allocation Transaction
+within 12 blocks, it is considered abandoned.
 
 
-\begin{verbatim}
-NameReservation(Hash: Hash(rand, name))
-\end{verbatim}
+$$
+\tuple{\underset{Hash}{\Ghash(Name \concatA Random)}}
+$$
 
 The motivation behind this is the same as in Namecoin, this is to prevent others from stealing your name before you had a chance to get it included and confirmed.
 
@@ -124,48 +166,59 @@ The motivation behind this is the same as in Namecoin, this is to prevent others
 
 After the corresponding NRT has matured, a name allocation can happen:
 
-\begin{verbatim}
-NameAllocation(Name: name, Rand: rand)
-\end{verbatim}
+$$
+\tuple{Name, Random}
+$$
 
-Name allocation is considered mature after 12 confirmations.
+Name allocation is considered mature after 6 confirmations. It is important to note that if the name wasn't used to push a repository to
+within next 4320 blocks, it is considered deallocated on the 4320th block following the block in which this NAT was mined.
 
 \subsection{Name Deallocation Transaction (NDT)}
 
 After the NAT has matured, one can deallocate the corresponding name.
 
-\begin{verbatim}
-NameDeallocation(Name: name)
-\end{verbatim}
+$$
+\tuple{Name}
+$$
+
+\section{Repository Transactions}
+
+\subsection{Reference Update Transaction (RUT)}
+
+$$
+\tuple{Repository, Ref, \underset{ObjectHash}{\Ggithash(\Ggitobject_{k})}}
+$$
+
 
 \section{Permission Management}
 
 Upon name allocation, the holder of the private key used to allocate the name is granted full permissions to the repository.
 
-\section{Repository Transactions}
-
-\subsection{Object Announcement Transaction (OAT)}
-
-\begin{verbatim}
-ObjectAnnouncement(Hash: hash, Type: blob|tree|commit)
-\end{verbatim}
-
-\subsection{Reference Update Transaction (RUT)}
-
-\begin{verbatim}
-ReferenceUpdate(Repository: repository, Ref: ref, Hash: hash)
-\end{verbatim}
-
 \section{Object Storage}
 
-Object storage is where Gitchain goes outside of the blockchain boundaries.
+Object storage is where Gitchain goes outside of the boundaries of transactions.
 
 \begin{thebibliography}{9}
+
+\bibitem{bitcoin}
+  Satoshi Nakamoto,
+  \emph{Bitcoin: A Peer-to-Peer Electronic Cash System}, 2008.
+  \url{https://bitcoin.org/bitcoin.pdf}
+
+\bibitem{namecoin}
+
+  \emph{Namecoin Design}.
+  \url{https://github.com/namecoin/namecoin/blob/namecoinq-release/DESIGN-namecoin.md}
 
 \bibitem{fonseca06}
   Jonas Fonseca,
   \emph{GitTorrent: a P2P-based Storage Backend for git}, 2006.
   \url{http://jonas.nitro.dk/tmp/foo/gittorrent.html/main.html}
+
+\bibitem{elansary}
+   Sameh El-Ansary, Luc Onana Alima, Per Brand, Seif Haridi
+   \emph{Efficient Broadcast in Structured P2P Networks}.
+   \url{http://www.sics.se/~seif/Publications/paper3.pdf}
 
 \bibitem{rfc1738}
   \emph{Uniform Resource Locators (URL)}.
