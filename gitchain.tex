@@ -122,7 +122,7 @@ $$
 \Genvs_{k} := \tuple{\underset{BitcoinTx}{\Gbitcoinhash(\Gbitcointxs_{k})}, \underset{Signature}{S(\Gtxs_{k}, \Gprivkeys_{m})}, \underset{PublicKey}{\Gpubkeys_{m}}}
 $$
 
-We define envelope binary representation for the purpose of hashing as $$\Gbinhash(\Genvs_{k}) := \Ghash(\Gtxs_{k}) \concatA S(\Gtxs_{k}, \Gprivkeys_{m}) \concatA  \Gpubkeys_{m}$$
+We define envelope binary representation for the purpose of hashing as $$\Gbinhash(\Genvs_{k}) := \Ghash(\Gtxs_{k}) \concatA  \Gpubkeys_{m}$$
 
 Each transaction has a corresponding Bitcoin transaction $\Gbitcointxs_{k}$ that uses \\OP\_RETURN facility to carry a magic header and a
 reference to the transaction using its envelope hash $\Ghash(\Genvs_{k})$. Typically, primary output of this transaction is equal to its input.
