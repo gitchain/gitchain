@@ -10,7 +10,7 @@ func TestNewAttribution(t *testing.T) {
 	txn, err := NewBlockAttribution()
 
 	if err != nil {
-		t.Errorf("error while creating name allocation transaction: %v", err)
+		t.Errorf("error while creating block attribution transaction: %v", err)
 	}
 
 	assert.True(t, txn.Valid())
