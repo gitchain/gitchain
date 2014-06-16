@@ -150,6 +150,10 @@ loop:
 				mineBlock(status, srv, log, previousBlockHash, transactionsPool)
 			}
 		}
+	case reqi := <-miningFactoryRequests:
+		if req, ok := reqi.(*MiningFactoryStatusRequest); ok {
+			req.ResponseChannel <- status
+		}
 	case <-time.After(time.Second * 1):
 		if key, _ := srv.DB.GetMainKey(); key != nil && len(transactionsPool) == 0 && status.AvailableMiners() == n {
 			mineBlock(status, srv, log, previousBlockHash, make([]*transaction.Envelope, 0))
